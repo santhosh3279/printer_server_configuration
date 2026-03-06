@@ -1,0 +1,101 @@
+{
+ "actions": [],
+ "autoname": "field:printer_name",
+ "creation": "2026-03-06 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "printer_name",
+  "printer_server",
+  "cups_printer_name",
+  "column_break_1",
+  "is_default",
+  "status",
+  "section_break_details",
+  "description",
+  "location"
+ ],
+ "fields": [
+  {
+   "fieldname": "printer_name",
+   "fieldtype": "Data",
+   "label": "Printer Name",
+   "reqd": 1,
+   "in_list_view": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "printer_server",
+   "fieldtype": "Link",
+   "label": "Printer Server",
+   "options": "Printer Server",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "cups_printer_name",
+   "fieldtype": "Data",
+   "label": "CUPS Printer Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "is_default",
+   "fieldtype": "Check",
+   "label": "Is Default"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Unknown\nReady\nOffline\nError",
+   "default": "Unknown",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "section_break_details",
+   "fieldtype": "Section Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "location",
+   "fieldtype": "Data",
+   "label": "Location"
+  }
+ ],
+ "links": [],
+ "modified": "2026-03-06 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Printer Server Configuration",
+ "name": "Printer",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

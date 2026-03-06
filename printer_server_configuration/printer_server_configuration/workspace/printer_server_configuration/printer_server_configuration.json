@@ -1,0 +1,112 @@
+{
+ "charts": [],
+ "content": "[{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Printer Server\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Printer\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Thermal Print Template\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Print Job\",\"col\":3}}]",
+ "creation": "2026-03-06 00:00:00.000000",
+ "doctype": "Workspace",
+ "icon": "printer",
+ "is_hidden": 0,
+ "label": "Printer Server Configuration",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Setup",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Printer Server",
+   "link_count": 0,
+   "link_to": "Printer Server",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Printer",
+   "link_count": 0,
+   "link_to": "Printer",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Templates",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Thermal Print Template",
+   "link_count": 0,
+   "link_to": "Thermal Print Template",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Print Jobs",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Print Job",
+   "link_count": 0,
+   "link_to": "Print Job",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-03-06 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Printer Server Configuration",
+ "name": "Printer Server Configuration",
+ "owner": "Administrator",
+ "public": 1,
+ "roles": [],
+ "sequence_id": 1.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "label": "Printer Server",
+   "link_to": "Printer Server",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Printer",
+   "link_to": "Printer",
+   "type": "DocType"
+  },
+  {
+   "color": "Yellow",
+   "doc_view": "List",
+   "label": "Thermal Print Template",
+   "link_to": "Thermal Print Template",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "label": "Print Job",
+   "link_to": "Print Job",
+   "type": "DocType"
+  }
+ ],
+ "title": "Printer Server Configuration",
+ "type": "module"
+}

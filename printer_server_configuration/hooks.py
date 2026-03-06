@@ -26,7 +26,7 @@ app_license = "mit"
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/printer_server_configuration/css/printer_server_configuration.css"
-# app_include_js = "/assets/printer_server_configuration/js/printer_server_configuration.js"
+app_include_js = "/assets/printer_server_configuration/js/thermal_print.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/printer_server_configuration/css/printer_server_configuration.css"
