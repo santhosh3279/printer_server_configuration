@@ -46,7 +46,8 @@ class PrintJob(Document):
 
 		try:
 			job_id = send_raw_to_cups(server_doc, printer_doc.cups_printer_name, raw_bytes, self.name)
-			self.db_set("cups_job_id", job_id)
+			if job_id is not None:
+				self.db_set("cups_job_id", job_id)
 			self.db_set("status", "Sent")
 			return {"success": True, "cups_job_id": job_id}
 		except Exception as e:

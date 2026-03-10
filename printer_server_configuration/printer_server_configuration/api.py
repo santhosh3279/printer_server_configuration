@@ -66,6 +66,28 @@ def print_thermal(printer, thermal_template, document_type=None, document_name=N
 
 
 @frappe.whitelist()
+def print_layout(printer, layout_template, document_type=None, document_name=None, title=None):
+	"""Render a Thermal Layout Template and send ESC/POS bytes to CUPS."""
+	from printer_server_configuration.printer_server_configuration.utils.escpos_utils import (
+		send_raw_to_cups,
+	)
+	from printer_server_configuration.printer_server_configuration.utils.layout_utils import (
+		render_layout_template,
+	)
+
+	template_doc = frappe.get_doc("Thermal Layout Template", layout_template)
+	context = {"doc": {}}
+	if document_type and document_name:
+		context["doc"] = frappe.get_doc(document_type, document_name).as_dict()
+
+	printer_doc = frappe.get_doc("Printer", printer)
+	server_doc = frappe.get_doc("Printer Server", printer_doc.printer_server)
+	raw_bytes = render_layout_template(template_doc, context)
+	job_id = send_raw_to_cups(server_doc, printer_doc.cups_printer_name, raw_bytes, title or layout_template)
+	return {"success": True, "cups_job_id": job_id}
+
+
+@frappe.whitelist()
 def sync_all_servers():
 	"""Sync printers from all configured CUPS servers."""
 	servers = frappe.get_all("Printer Server", fields=["name"])

@@ -1,0 +1,109 @@
+{
+ "actions": [],
+ "autoname": "field:template_name",
+ "creation": "2026-03-10 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "template_name",
+  "document_type",
+  "paper_width",
+  "column_break_1",
+  "auto_cut",
+  "open_cash_drawer",
+  "section_break_template",
+  "template_content",
+  "section_break_reference",
+  "tag_reference"
+ ],
+ "fields": [
+  {
+   "fieldname": "template_name",
+   "fieldtype": "Data",
+   "label": "Template Name",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "document_type",
+   "fieldtype": "Link",
+   "label": "Document Type",
+   "options": "DocType",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "paper_width",
+   "fieldtype": "Select",
+   "label": "Paper Width",
+   "options": "80mm\n58mm",
+   "default": "80mm",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "auto_cut",
+   "fieldtype": "Check",
+   "label": "Auto Cut",
+   "default": "1"
+  },
+  {
+   "fieldname": "open_cash_drawer",
+   "fieldtype": "Check",
+   "label": "Open Cash Drawer"
+  },
+  {
+   "fieldname": "section_break_template",
+   "fieldtype": "Section Break",
+   "label": "Jinja Template"
+  },
+  {
+   "fieldname": "template_content",
+   "fieldtype": "Code",
+   "label": "Template",
+   "options": "Jinja",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_reference",
+   "fieldtype": "Section Break",
+   "label": "Tag Reference",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "tag_reference",
+   "fieldtype": "HTML",
+   "label": "Tag Reference",
+   "options": "<div style='font-family:monospace;font-size:12px;line-height:2'><b>ALIGNMENT</b> &nbsp;<span style='color:#888'>(at start of line — sets alignment for the whole line)</span><br>[C] or [CENTER] &nbsp; [R] or [RIGHT] &nbsp; [L] or [LEFT]<br><br><b>TEXT STYLE</b> &nbsp;<span style='color:#888'>(inline — wrap around text)</span><br>[B]...[/B] &nbsp; bold<br>[U]...[/U] &nbsp; underline (single)<br>[UU]...[/UU] &nbsp; underline (double)<br>[INV]...[/INV] &nbsp; inverted — white text on black background<br>[FLIP]...[/FLIP] &nbsp; upside-down text<br>[FB]...[/FB] &nbsp; Font B (smaller / narrower)<br><br><b>SIZE</b> &nbsp;<span style='color:#888'>(inline — can combine with style tags)</span><br>[BIG]...[/BIG] &nbsp; 2× width + 2× height, auto bold<br>[W2]...[/W2] &nbsp; double width only<br>[H2]...[/H2] &nbsp; double height only<br>[W:n]...[/W:n] &nbsp; width multiplier n = 1–8<br>[H:n]...[/H:n] &nbsp; height multiplier n = 1–8<br><br><b>SEPARATORS</b><br>[LINE] &nbsp; full-width dashed line ( - - - )<br>[DLINE] &nbsp; full-width double line ( === )<br>[RULE:char] &nbsp; full-width line with custom char &nbsp; e.g. [RULE:*] or [RULE:=]<br><br><b>CONTROLS</b><br>[CUT] &nbsp; full paper cut<br>[PCUT] &nbsp; partial cut<br>[FEED] &nbsp; feed 1 blank line<br>[FEED:n] &nbsp; feed n blank lines<br>[DRAWER] &nbsp; open cash drawer pulse<br><br><b>BARCODES &amp; QR</b><br>[BARCODE:value:TYPE] &nbsp; e.g. [BARCODE:{{ doc.name }}:CODE39]<br>[BARCODE:value:TYPE:height] &nbsp; barcode with height in dots e.g. :80<br>[QR:value] &nbsp; QR code (default size 6)<br>[QR:value:size] &nbsp; QR code with explicit size 1–16<br>Types: CODE39 &nbsp; EAN13 &nbsp; EAN8 &nbsp; UPC-A &nbsp; ITF &nbsp; NW7<br><br><b>RAW ESC/POS</b><br>[HEX:bytes] &nbsp; emit raw bytes as hex string &nbsp; e.g. [HEX:1B40] = ESC @<br><br><b>JINJA NOTES</b><br>• Use <code>{{ doc['items'] }}</code> (bracket notation) for child tables — <code>doc.items</code> conflicts with Python dict method<br>• Use <code>{{ doc.field_name }}</code> for regular fields<br>• All standard Jinja2 syntax works: loops, conditions, filters, macros<br>• Use <code>{%- -%}</code> to suppress blank lines around control blocks<br><br><b>COMBINING TAGS</b> (any combination is valid on one line)<br><pre style='margin:0'>[C][BIG]HEADER[/BIG]\n[C][B][INV] NOTICE [/INV][/B]\n[R][FB]small right text[/FB]\n[R][B][U]{{ '%.2f'|format(doc.grand_total) }}[/U][/B]</pre></div>"
+  }
+ ],
+ "links": [],
+ "modified": "2026-03-10 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Printer Server Configuration",
+ "name": "Thermal Layout Template",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
