@@ -1,4 +1,8 @@
 app_name = "printer_server_configuration"
+
+fixtures = [
+	{"dt": "Print Template", "filters": [["template_name", "in", ["BARCODE"]]]},
+]
 app_title = "Printer Server Configuration"
 app_publisher = "Santhosh"
 app_description = "For configuring Printers"

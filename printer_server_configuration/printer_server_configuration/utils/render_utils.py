@@ -7,9 +7,10 @@ or to HTML for PDF preview.
 Supported tags
 --------------
   Alignment  : [C] [CENTER]  [R] [RIGHT]  [L] [LEFT]
+               Two-column   : [L]left text[R]right text  (pads spaces between)
   Style      : [B] [BOLD]  [U]  [UU]  [INV] [FLIP]  [FB] [FONTB]
   Size       : [BIG]  [W2]  [H2]  [W:n]  [H:n]  (n = 1-8)
-  Lines      : [LINE]  [DLINE]  [RULE:char]
+  Lines      : [LINE]  [SLINE]  [DLINE]  [RULE:char]
   Control    : [CUT]  [PCUT]  [FEED]  [FEED:n]  [DRAWER]
   Barcodes   : [BARCODE:value:TYPE:height]  [QR:value:size]
   Raw        : [HEX:1B40...]
@@ -20,7 +21,10 @@ import types
 
 import frappe
 
-CHARS_PER_LINE = {"80mm": 48, "58mm": 32}
+CHARS_PER_LINE = {"80mm": 46, "58mm": 30}
+
+# Left margin in dots at 203 DPI (~3.5mm each side)
+_LEFT_MARGIN_DOTS = {"80mm": 28, "58mm": 22}
 
 _RESET = dict(
 	align="left",
@@ -55,6 +59,133 @@ def _ns(d):
 
 
 # ---------------------------------------------------------------------------
+# Shared style helpers
+# ---------------------------------------------------------------------------
+
+
+def _strip_alignment_tags(line):
+	"""Remove all alignment tags ([L], [R], [C] and closing variants) from line."""
+	return re.sub(r"\[/?(?:L(?:EFT)?|R(?:IGHT)?|C(?:ENTER)?)\]", "", line, flags=re.I)
+
+
+def _parse_escpos_style(line):
+	"""
+	Strip all style tags from *line* and return (escpos_kw_dict, clean_line).
+	Alignment tags must already be removed before calling this.
+	"""
+	underline = 0
+	if "[UU]" in line:
+		underline = 2
+	elif "[U]" in line:
+		underline = 1
+	line = line.replace("[UU]", "").replace("[/UU]", "")
+	line = line.replace("[U]", "").replace("[/U]", "")
+
+	invert = bool(re.search(r"\[INV(?:ERT)?\]", line, re.I))
+	line = re.sub(r"\[/?INV(?:ERT)?\]", "", line, flags=re.I)
+
+	flip = "[FLIP]" in line
+	line = line.replace("[FLIP]", "").replace("[/FLIP]", "")
+
+	font = "b" if re.search(r"\[F(?:ONT)?B\]", line, re.I) else "a"
+	line = re.sub(r"\[/?F(?:ONT)?B\]", "", line, flags=re.I)
+
+	bold = dw = dh = False
+	w = h = 1
+
+	if "[BIG]" in line:
+		bold = dw = dh = True
+		w = h = 2
+	line = line.replace("[BIG]", "").replace("[/BIG]", "")
+
+	if m := re.search(r"\[W:([1-8])\]", line):
+		w = int(m.group(1))
+		dw = w >= 2
+		line = re.sub(r"\[/?W:[1-8]\]", "", line)
+	if m := re.search(r"\[H:([1-8])\]", line):
+		h = int(m.group(1))
+		dh = h >= 2
+		line = re.sub(r"\[/?H:[1-8]\]", "", line)
+
+	if "[W2]" in line:
+		dw = True
+		w = max(w, 2)
+	line = line.replace("[W2]", "").replace("[/W2]", "")
+	if "[H2]" in line:
+		dh = True
+		h = max(h, 2)
+	line = line.replace("[H2]", "").replace("[/H2]", "")
+
+	if re.search(r"\[B(?:OLD)?\]", line, re.I):
+		bold = True
+		line = re.sub(r"\[/?B(?:OLD)?\]", "", line, flags=re.I)
+
+	kw = dict(align="left", bold=bold, underline=underline, double_width=dw,
+		double_height=dh, font=font, invert=invert, flip=flip)
+	if w > 2 or h > 2:
+		kw.update(custom_size=True, width=w, height=h)
+
+	return kw, line
+
+
+def _parse_html_style(line):
+	"""
+	Strip all style tags from *line* and return (css_style_str, clean_line).
+	Alignment tags must already be removed before calling this.
+	"""
+	import html as hl
+
+	td = ""
+	if "[UU]" in line:
+		td = "text-decoration:underline double;"
+	elif "[U]" in line:
+		td = "text-decoration:underline;"
+	line = line.replace("[UU]", "").replace("[/UU]", "")
+	line = line.replace("[U]", "").replace("[/U]", "")
+
+	invert = bool(re.search(r"\[INV(?:ERT)?\]", line, re.I))
+	line = re.sub(r"\[/?INV(?:ERT)?\]", "", line, flags=re.I)
+
+	flip = "[FLIP]" in line
+	line = line.replace("[FLIP]", "").replace("[/FLIP]", "")
+
+	font_s = ""
+	if re.search(r"\[F(?:ONT)?B\]", line, re.I):
+		font_s = "font-size:0.85em;"
+	line = re.sub(r"\[/?F(?:ONT)?B\]", "", line, flags=re.I)
+
+	bold_s = size_s = ""
+	if "[BIG]" in line:
+		bold_s = "font-weight:bold;"
+		size_s = "font-size:1.5em;"
+	line = line.replace("[BIG]", "").replace("[/BIG]", "")
+
+	if m := re.search(r"\[W:([1-8])\]", line):
+		size_s = f"font-size:{0.85 * int(m.group(1))}em;"
+		line = re.sub(r"\[/?W:[1-8]\]", "", line)
+	if m := re.search(r"\[H:([1-8])\]", line):
+		size_s += f"line-height:{1.3 * int(m.group(1))}em;"
+		line = re.sub(r"\[/?H:[1-8]\]", "", line)
+	if "[W2]" in line:
+		size_s = size_s or "font-size:1.4em;"
+	line = line.replace("[W2]", "").replace("[/W2]", "")
+	line = line.replace("[H2]", "").replace("[/H2]", "")
+
+	if re.search(r"\[B(?:OLD)?\]", line, re.I):
+		bold_s = "font-weight:bold;"
+		line = re.sub(r"\[/?B(?:OLD)?\]", "", line, flags=re.I)
+
+	extra = ""
+	if invert:
+		extra += "background:#000;color:#fff;"
+	if flip:
+		extra += "transform:rotate(180deg);display:inline-block;width:100%;"
+
+	style = bold_s + size_s + td + font_s + extra
+	return style, hl.escape(line)
+
+
+# ---------------------------------------------------------------------------
 # ESC/POS renderer
 # ---------------------------------------------------------------------------
 
@@ -66,12 +197,17 @@ def render_to_escpos(template_doc, context):
 	except ImportError:
 		frappe.throw("python-escpos is not installed. Run: bench pip install python-escpos")
 
-	chars = CHARS_PER_LINE.get(getattr(template_doc, "paper_width", "80mm"), 48)
+	paper_width = getattr(template_doc, "paper_width", "80mm")
+	chars = CHARS_PER_LINE.get(paper_width, 46)
 	rendered = frappe.render_template(template_doc.template_content or "", context)
 
 	p = Dummy()
 	if getattr(template_doc, "open_cash_drawer", False):
 		p.cashdraw(2)
+
+	# Set 3.5mm left margin (GS L nL nH)
+	margin_dots = _LEFT_MARGIN_DOTS.get(paper_width, 28)
+	p._raw(bytes([0x1D, 0x4C, margin_dots & 0xFF, margin_dots >> 8]))
 
 	_process_escpos(p, rendered, chars)
 
@@ -100,6 +236,9 @@ def _process_escpos(p, content, chars):
 		elif s == "[LINE]":
 			p.set(**_RESET)
 			p.text("-" * chars + "\n")
+		elif s == "[SLINE]":
+			p.set(**_RESET)
+			p.text("\u2500" * chars + "\n")
 		elif s == "[DLINE]":
 			p.set(**_RESET)
 			p.text("=" * chars + "\n")
@@ -118,7 +257,7 @@ def _process_escpos(p, content, chars):
 			if len(h) % 2 == 0:
 				p._raw(bytes.fromhex(h))
 		else:
-			_print_styled_line(p, raw)
+			_print_styled_line(p, raw, chars)
 
 
 def _barcode(p, value, bc_type, height):
@@ -141,77 +280,38 @@ def _qr(p, value, size):
 		p.set(**_RESET)
 
 
-def _print_styled_line(p, line):
+def _print_styled_line(p, line, chars):
 	"""Parse inline [TAGS], build p.set() kwargs, and print the line."""
-	# Alignment
+	has_left = bool(re.search(r"\[L(?:EFT)?\]", line, re.I))
+	has_right = bool(re.search(r"\[R(?:IGHT)?\]", line, re.I))
+
+	# Two-column layout: [L]left text[R]right text — pad spaces between
+	if has_left and has_right:
+		parts = re.split(r"\[R(?:IGHT)?\]", line, 1, re.I)
+		left_raw = _strip_alignment_tags(parts[0])
+		right_raw = _strip_alignment_tags(parts[1] if len(parts) > 1 else "")
+		kw, left_text = _parse_escpos_style(left_raw)
+		_, right_text = _parse_escpos_style(right_raw)
+		pad = max(0, chars - len(left_text) - len(right_text))
+		kw["align"] = "left"
+		p.set(**kw)
+		p.text(left_text + " " * pad + right_text + "\n")
+		p.set(**_RESET)
+		return
+
+	# Single alignment
 	align = "left"
 	if re.search(r"\[C(?:ENTER)?\]", line, re.I):
 		align = "center"
 		line = re.sub(r"\[/?C(?:ENTER)?\]", "", line, flags=re.I)
-	elif re.search(r"\[R(?:IGHT)?\]", line, re.I):
+	elif has_right:
 		align = "right"
 		line = re.sub(r"\[/?R(?:IGHT)?\]", "", line, flags=re.I)
-	elif re.search(r"\[L(?:EFT)?\]", line, re.I):
+	elif has_left:
 		line = re.sub(r"\[/?L(?:EFT)?\]", "", line, flags=re.I)
 
-	# Underline
-	underline = 0
-	if "[UU]" in line:
-		underline = 2
-		line = line.replace("[UU]", "").replace("[/UU]", "")
-	elif "[U]" in line:
-		underline = 1
-		line = line.replace("[U]", "").replace("[/U]", "")
-
-	# Invert / Flip / Font
-	invert = bool(re.search(r"\[INV(?:ERT)?\]", line, re.I))
-	if invert:
-		line = re.sub(r"\[/?INV(?:ERT)?\]", "", line, flags=re.I)
-
-	flip = "[FLIP]" in line
-	if flip:
-		line = line.replace("[FLIP]", "").replace("[/FLIP]", "")
-
-	font = "b" if re.search(r"\[F(?:ONT)?B\]", line, re.I) else "a"
-	if font == "b":
-		line = re.sub(r"\[/?F(?:ONT)?B\]", "", line, flags=re.I)
-
-	# Size
-	bold = dw = dh = False
-	w = h = 1
-
-	if "[BIG]" in line:
-		bold = dw = dh = True
-		w = h = 2
-		line = line.replace("[BIG]", "").replace("[/BIG]", "")
-
-	if m := re.search(r"\[W:([1-8])\]", line):
-		w = int(m.group(1))
-		dw = w >= 2
-		line = re.sub(r"\[/?W:[1-8]\]", "", line)
-	if m := re.search(r"\[H:([1-8])\]", line):
-		h = int(m.group(1))
-		dh = h >= 2
-		line = re.sub(r"\[/?H:[1-8]\]", "", line)
-
-	if "[W2]" in line:
-		dw = True
-		w = max(w, 2)
-		line = line.replace("[W2]", "").replace("[/W2]", "")
-	if "[H2]" in line:
-		dh = True
-		h = max(h, 2)
-		line = line.replace("[H2]", "").replace("[/H2]", "")
-
-	if re.search(r"\[B(?:OLD)?\]", line, re.I):
-		bold = True
-		line = re.sub(r"\[/?B(?:OLD)?\]", "", line, flags=re.I)
-
-	kw = dict(align=align, bold=bold, underline=underline, double_width=dw,
-		double_height=dh, font=font, invert=invert, flip=flip)
-	if w > 2 or h > 2:
-		kw.update(custom_size=True, width=w, height=h)
-
+	kw, line = _parse_escpos_style(line)
+	kw["align"] = align
 	p.set(**kw)
 	p.text(line + "\n")
 	p.set(**_RESET)
@@ -226,7 +326,7 @@ def render_to_html(rendered, paper_width="80mm"):
 	"""Convert rendered template text (tags intact) to HTML receipt for PDF."""
 	import html as hl
 
-	chars = CHARS_PER_LINE.get(paper_width, 48)
+	chars = CHARS_PER_LINE.get(paper_width, 46)
 	width_px = "302px" if paper_width == "80mm" else "220px"
 	lines = []
 
@@ -242,6 +342,8 @@ def render_to_html(rendered, paper_width="80mm"):
 			pass
 		elif s == "[LINE]":
 			lines.append('<hr style="border:none;border-top:1px dashed #000;margin:2px 0">')
+		elif s == "[SLINE]":
+			lines.append('<hr style="border:none;border-top:1px solid #000;margin:2px 0">')
 		elif s == "[DLINE]":
 			lines.append('<hr style="border:none;border-top:2px solid #000;margin:2px 0">')
 		elif m := re.fullmatch(r"\[RULE:(.)\]", s):
@@ -273,7 +375,7 @@ def render_to_html(rendered, paper_width="80mm"):
     font-size: 12px;
     width: {width_px};
     margin: 0 auto;
-    padding: 8px;
+    padding: 8px 13px;
     line-height: 1.5;
   }}
   div {{ margin: 0; padding: 0; white-space: pre-wrap; word-break: break-all; }}
@@ -283,65 +385,31 @@ def render_to_html(rendered, paper_width="80mm"):
 
 
 def _line_to_html(line):
-	import html as hl
+	has_left = bool(re.search(r"\[L(?:EFT)?\]", line, re.I))
+	has_right = bool(re.search(r"\[R(?:IGHT)?\]", line, re.I))
 
+	# Two-column layout: [L]left text[R]right text
+	if has_left and has_right:
+		parts = re.split(r"\[R(?:IGHT)?\]", line, 1, re.I)
+		left_raw = _strip_alignment_tags(parts[0])
+		right_raw = _strip_alignment_tags(parts[1] if len(parts) > 1 else "")
+		shared_style, left_text = _parse_html_style(left_raw)
+		_, right_text = _parse_html_style(right_raw)
+		return (
+			f'<div style="display:flex;justify-content:space-between;{shared_style}">'
+			f"<span>{left_text}</span><span>{right_text}</span></div>"
+		)
+
+	# Single alignment
 	align = "left"
 	if re.search(r"\[C(?:ENTER)?\]", line, re.I):
 		align = "center"
 		line = re.sub(r"\[/?C(?:ENTER)?\]", "", line, flags=re.I)
-	elif re.search(r"\[R(?:IGHT)?\]", line, re.I):
+	elif has_right:
 		align = "right"
 		line = re.sub(r"\[/?R(?:IGHT)?\]", "", line, flags=re.I)
-	elif re.search(r"\[L(?:EFT)?\]", line, re.I):
+	elif has_left:
 		line = re.sub(r"\[/?L(?:EFT)?\]", "", line, flags=re.I)
 
-	td = ""
-	if "[UU]" in line:
-		td = "text-decoration:underline double;"
-		line = line.replace("[UU]", "").replace("[/UU]", "")
-	elif "[U]" in line:
-		td = "text-decoration:underline;"
-		line = line.replace("[U]", "").replace("[/U]", "")
-
-	invert = bool(re.search(r"\[INV(?:ERT)?\]", line, re.I))
-	if invert:
-		line = re.sub(r"\[/?INV(?:ERT)?\]", "", line, flags=re.I)
-
-	flip = "[FLIP]" in line
-	if flip:
-		line = line.replace("[FLIP]", "").replace("[/FLIP]", "")
-
-	font_s = ""
-	if re.search(r"\[F(?:ONT)?B\]", line, re.I):
-		font_s = "font-size:0.85em;"
-		line = re.sub(r"\[/?F(?:ONT)?B\]", "", line, flags=re.I)
-
-	bold_s = size_s = ""
-	if "[BIG]" in line:
-		bold_s = "font-weight:bold;"
-		size_s = "font-size:1.5em;"
-		line = line.replace("[BIG]", "").replace("[/BIG]", "")
-
-	if m := re.search(r"\[W:([1-8])\]", line):
-		size_s = f"font-size:{0.85 * int(m.group(1))}em;"
-		line = re.sub(r"\[/?W:[1-8]\]", "", line)
-	if m := re.search(r"\[H:([1-8])\]", line):
-		size_s += f"line-height:{1.3 * int(m.group(1))}em;"
-		line = re.sub(r"\[/?H:[1-8]\]", "", line)
-	if "[W2]" in line:
-		size_s = size_s or "font-size:1.4em;"
-		line = line.replace("[W2]", "").replace("[/W2]", "")
-	if "[H2]" in line:
-		line = line.replace("[H2]", "").replace("[/H2]", "")
-
-	if re.search(r"\[B(?:OLD)?\]", line, re.I):
-		bold_s = "font-weight:bold;"
-		line = re.sub(r"\[/?B(?:OLD)?\]", "", line, flags=re.I)
-
-	style = f"text-align:{align};" + bold_s + size_s + td + font_s
-	if invert:
-		style += "background:#000;color:#fff;"
-	if flip:
-		style += "transform:rotate(180deg);display:inline-block;width:100%;"
-
-	return f'<div style="{style}">{hl.escape(line)}</div>'
+	style, escaped = _parse_html_style(line)
+	return f'<div style="text-align:{align};{style}">{escaped}</div>'

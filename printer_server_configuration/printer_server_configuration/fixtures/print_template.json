@@ -1,0 +1,12 @@
+[
+ {
+  "doctype": "Print Template",
+  "template_name": "BARCODE",
+  "document_type": "Purchase Invoice",
+  "format_type": "Barcode",
+  "label_width_mm": 76.5,
+  "label_height_mm": 25.0,
+  "copies_per_doc": 1,
+  "barcode_template": "{% for item in doc.items -%}\n{% set bc = (item.item_code or '')[:13] -%}\n{% set nm = (item.item_name or '')[:23] -%}\n{% set ra = '%.4f' % (item.rate | float) -%}\n{% set rc = '%.4f' % (item.valuation_rate | float if item.valuation_rate else item.rate | float) -%}\n^XA\n^PW612^LL200\n^CI28\n^FO5,5^A0N,20,20^FD{{ nm }}^FS\n^FO5,30^BY2^BCN,55,N,N,N^FD{{ bc }}^FS\n^FO5,95^A0N,16,16^FD{{ bc }}^FS\n^FO5,115^A0N,16,16^FDRa:{{ ra }}^FS\n^FO5,140^A0N,16,16^FDRc:{{ rc }}^FS\n^FO310,5^A0N,20,20^FD{{ nm }}^FS\n^FO310,30^BY2^BCN,55,N,N,N^FD{{ bc }}^FS\n^FO310,95^A0N,16,16^FD{{ bc }}^FS\n^FO310,115^A0N,16,16^FDRa:{{ ra }}^FS\n^FO310,140^A0N,16,16^FDRc:{{ rc }}^FS\n^XZ\n{%- endfor %}"
+ }
+]
