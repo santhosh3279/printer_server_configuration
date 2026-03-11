@@ -28,63 +28,10 @@ def get_default_printer():
 
 
 @frappe.whitelist()
-def print_file(printer, file_url, title=None, copies=1, document_type=None, document_name=None):
-	"""Create a Print Job and send it to CUPS immediately."""
-	job = frappe.get_doc(
-		{
-			"doctype": "Print Job",
-			"printer": printer,
-			"file_url": file_url,
-			"job_title": title or file_url,
-			"copies": int(copies),
-			"document_type": document_type,
-			"document_name": document_name,
-		}
-	)
-	job.insert(ignore_permissions=True)
-	result = job.submit_to_cups()
-	return {"job": job.name, **result}
-
-
-@frappe.whitelist()
-def print_thermal(printer, thermal_template, document_type=None, document_name=None, title=None):
-	"""Create a thermal Print Job and send ESC/POS bytes to CUPS immediately."""
-	job = frappe.get_doc(
-		{
-			"doctype": "Print Job",
-			"printer": printer,
-			"job_type": "Thermal",
-			"thermal_template": thermal_template,
-			"job_title": title or thermal_template,
-			"document_type": document_type,
-			"document_name": document_name,
-		}
-	)
-	job.insert(ignore_permissions=True)
-	result = job.submit_to_cups()
-	return {"job": job.name, **result}
-
-
-@frappe.whitelist()
-def print_layout(printer, layout_template, document_type=None, document_name=None, title=None):
-	"""Render a Thermal Layout Template and send ESC/POS bytes to CUPS."""
-	from printer_server_configuration.printer_server_configuration.utils.escpos_utils import (
-		send_raw_to_cups,
-	)
-	from printer_server_configuration.printer_server_configuration.utils.layout_utils import (
-		render_layout_template,
-	)
-
-	template_doc = frappe.get_doc("Thermal Layout Template", layout_template)
-	context = {"doc": {}}
-	if document_type and document_name:
-		context["doc"] = frappe.get_doc(document_type, document_name).as_dict()
-
-	printer_doc = frappe.get_doc("Printer", printer)
-	server_doc = frappe.get_doc("Printer Server", printer_doc.printer_server)
-	raw_bytes = render_layout_template(template_doc, context)
-	job_id = send_raw_to_cups(server_doc, printer_doc.cups_printer_name, raw_bytes, title or layout_template)
-	return {"success": True, "cups_job_id": job_id}
+def print_document(printer, print_template, document_type=None, document_name=None, copies=1, title=None):
+	"""Render a Print Template (Thermal / PDF / Barcode) and send to CUPS."""
+	template_doc = frappe.get_doc("Print Template", print_template)
+	return template_doc.print_doc(printer=printer, document_name=document_name, copies=int(copies or 1))
 
 
 @frappe.whitelist()

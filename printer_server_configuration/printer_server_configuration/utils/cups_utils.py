@@ -363,6 +363,29 @@ def get_job_status(job_doc):
 		return {"error": str(e)}
 
 
+def send_pdf_to_cups(server_doc, cups_printer_name, pdf_bytes, job_name="pdf-print"):
+	"""Send raw PDF bytes to a CUPS printer via IPP."""
+	uri = _make_printer_uri(server_doc, cups_printer_name)
+	op_attrs = _base_attrs(server_doc, uri) + [
+		(TAG_MIMETYPE, "document-format", "application/pdf"),
+	]
+	job_attrs = [(TAG_NAME, "job-name", job_name)]
+
+	status, groups = _send(
+		server_doc,
+		f"/printers/{cups_printer_name}",
+		OP_PRINT_JOB,
+		op_attrs,
+		extra_groups=[(TAG_JOB, job_attrs)],
+		document=pdf_bytes,
+	)
+
+	if status > 0x00FF:
+		frappe.throw(f"CUPS error: 0x{status:04x}")
+
+	return groups[0].get("job-id") if groups else None
+
+
 def cancel_print_job(job_doc):
 	if isinstance(job_doc, str):
 		job_doc = frappe.get_doc("Print Job", job_doc)

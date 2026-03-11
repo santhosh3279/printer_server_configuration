@@ -1,12 +1,22 @@
 """
-Comprehensive ESC/POS renderer for Thermal Layout Template.
+ESC/POS and HTML rendering for Print Template.
 
-Supports all major ESC/POS formatting features via [TAG] syntax.
-Tags can be freely combined within a line. Jinja2 is rendered first,
-then tags are interpreted to emit ESC/POS commands.
+Converts a Jinja template (with [TAG] syntax) to raw ESC/POS bytes
+or to HTML for PDF preview.
+
+Supported tags
+--------------
+  Alignment  : [C] [CENTER]  [R] [RIGHT]  [L] [LEFT]
+  Style      : [B] [BOLD]  [U]  [UU]  [INV] [FLIP]  [FB] [FONTB]
+  Size       : [BIG]  [W2]  [H2]  [W:n]  [H:n]  (n = 1-8)
+  Lines      : [LINE]  [DLINE]  [RULE:char]
+  Control    : [CUT]  [PCUT]  [FEED]  [FEED:n]  [DRAWER]
+  Barcodes   : [BARCODE:value:TYPE:height]  [QR:value:size]
+  Raw        : [HEX:1B40...]
 """
 
 import re
+import types
 
 import frappe
 
@@ -25,101 +35,53 @@ _RESET = dict(
 
 
 # ---------------------------------------------------------------------------
-# Public
+# Context builder — wraps frappe doc in SimpleNamespace so doc.items
+# returns the child-table list and NOT Python's dict.items() method.
 # ---------------------------------------------------------------------------
 
 
-def render_layout_template(template_doc, context):
-	"""Render a Thermal Layout Template to raw ESC/POS bytes."""
+def build_context(template_doc, document_name):
+	"""Return Jinja context dict with doc wrapped in SimpleNamespace."""
+	context = {"doc": types.SimpleNamespace()}
+	if template_doc.document_type and document_name:
+		d = frappe.get_doc(template_doc.document_type, document_name).as_dict()
+		context["doc"] = _ns(d)
+	return context
+
+
+def _ns(d):
+	"""Wrap a dict/frappe._dict in SimpleNamespace recursively for top level only."""
+	return types.SimpleNamespace(**{k: v for k, v in d.items()})
+
+
+# ---------------------------------------------------------------------------
+# ESC/POS renderer
+# ---------------------------------------------------------------------------
+
+
+def render_to_escpos(template_doc, context):
+	"""Render template to raw ESC/POS bytes using the Dummy printer."""
 	try:
 		from escpos.printer import Dummy
 	except ImportError:
 		frappe.throw("python-escpos is not installed. Run: bench pip install python-escpos")
 
-	if isinstance(template_doc, str):
-		template_doc = frappe.get_doc("Thermal Layout Template", template_doc)
-
-	chars = CHARS_PER_LINE.get(template_doc.paper_width, 48)
-	rendered = frappe.render_template(template_doc.template_content, context)
+	chars = CHARS_PER_LINE.get(getattr(template_doc, "paper_width", "80mm"), 48)
+	rendered = frappe.render_template(template_doc.template_content or "", context)
 
 	p = Dummy()
-	if template_doc.open_cash_drawer:
+	if getattr(template_doc, "open_cash_drawer", False):
 		p.cashdraw(2)
 
-	_process(p, rendered, chars)
+	_process_escpos(p, rendered, chars)
 
-	if template_doc.auto_cut:
+	if getattr(template_doc, "auto_cut", True):
 		p.cut()
 
 	return p.output
 
 
-def layout_to_html(rendered, paper_width="80mm"):
-	"""Convert a rendered layout template (tags intact) to HTML for PDF preview."""
-	import html as hl
-
-	chars = CHARS_PER_LINE.get(paper_width, 48)
-	width_px = "302px" if paper_width == "80mm" else "220px"
-	lines = []
-
-	for line in rendered.split("\n"):
-		raw = line.rstrip()
-		s = raw.strip()
-
-		if not s:
-			lines.append('<div style="line-height:0.5em">&nbsp;</div>')
-		elif s in ("[CUT]", "[PCUT]"):
-			lines.append('<hr style="border:none;border-top:1px dashed #000;margin:3px 0">')
-		elif s == "[DRAWER]":
-			pass
-		elif s == "[LINE]":
-			lines.append('<hr style="border:none;border-top:1px dashed #000;margin:2px 0">')
-		elif s == "[DLINE]":
-			lines.append('<hr style="border:none;border-top:2px solid #000;margin:2px 0">')
-		elif m := re.fullmatch(r"\[RULE:(.)\]", s):
-			lines.append(f"<div>{hl.escape(m.group(1) * chars)}</div>")
-		elif m := re.fullmatch(r"\[FEED(?::(\d+))?\]", s):
-			for _ in range(int(m.group(1) or 1)):
-				lines.append('<div style="line-height:0.5em">&nbsp;</div>')
-		elif m := re.fullmatch(r"\[BARCODE:([^:\]]+)(?::([^:\]]+))?(?::(\d+))?\]", s):
-			bc_type = (m.group(2) or "CODE39").upper()
-			lines.append(
-				f'<div style="text-align:center;font-size:0.8em;color:#555">'
-				f"&#9646; Barcode: {hl.escape(m.group(1))} ({bc_type}) &#9646;</div>"
-			)
-		elif m := re.fullmatch(r"\[QR:([^\]:]+)(?::(\d+))?\]", s):
-			lines.append(
-				f'<div style="text-align:center;font-size:0.8em;color:#555">'
-				f"&#9646; QR: {hl.escape(m.group(1))} &#9646;</div>"
-			)
-		elif m := re.fullmatch(r"\[HEX:([0-9A-Fa-f]+)\]", s):
-			lines.append(f'<div style="font-size:0.75em;color:#bbb">[HEX:{m.group(1)}]</div>')
-		else:
-			lines.append(_line_to_html(raw))
-
-	body = "\n".join(lines)
-	return f"""<!DOCTYPE html>
-<html><head><meta charset="utf-8"><style>
-  body {{
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 12px;
-    width: {width_px};
-    margin: 0 auto;
-    padding: 8px;
-    line-height: 1.5;
-  }}
-  div {{ margin: 0; padding: 0; white-space: pre-wrap; word-break: break-all; }}
-</style></head>
-<body>{body}</body>
-</html>"""
-
-
-# ---------------------------------------------------------------------------
-# ESC/POS processing
-# ---------------------------------------------------------------------------
-
-
-def _process(p, content, chars):
+def _process_escpos(p, content, chars):
 	for line in content.split("\n"):
 		raw = line.rstrip()
 		s = raw.strip()
@@ -180,8 +142,8 @@ def _qr(p, value, size):
 
 
 def _print_styled_line(p, line):
-	"""Extract all inline [TAGS] from a line, build p.set() kwargs, print."""
-	# --- Alignment ---
+	"""Parse inline [TAGS], build p.set() kwargs, and print the line."""
+	# Alignment
 	align = "left"
 	if re.search(r"\[C(?:ENTER)?\]", line, re.I):
 		align = "center"
@@ -192,7 +154,7 @@ def _print_styled_line(p, line):
 	elif re.search(r"\[L(?:EFT)?\]", line, re.I):
 		line = re.sub(r"\[/?L(?:EFT)?\]", "", line, flags=re.I)
 
-	# --- Underline ---
+	# Underline
 	underline = 0
 	if "[UU]" in line:
 		underline = 2
@@ -201,7 +163,7 @@ def _print_styled_line(p, line):
 		underline = 1
 		line = line.replace("[U]", "").replace("[/U]", "")
 
-	# --- Invert / Flip / Font ---
+	# Invert / Flip / Font
 	invert = bool(re.search(r"\[INV(?:ERT)?\]", line, re.I))
 	if invert:
 		line = re.sub(r"\[/?INV(?:ERT)?\]", "", line, flags=re.I)
@@ -214,9 +176,8 @@ def _print_styled_line(p, line):
 	if font == "b":
 		line = re.sub(r"\[/?F(?:ONT)?B\]", "", line, flags=re.I)
 
-	# --- Size (BIG first, then explicit W:/H:, then shorthand W2/H2) ---
-	bold = False
-	dw = dh = False
+	# Size
+	bold = dw = dh = False
 	w = h = 1
 
 	if "[BIG]" in line:
@@ -257,8 +218,68 @@ def _print_styled_line(p, line):
 
 
 # ---------------------------------------------------------------------------
-# HTML helpers (for PDF preview)
+# HTML renderer (for PDF preview of Thermal templates)
 # ---------------------------------------------------------------------------
+
+
+def render_to_html(rendered, paper_width="80mm"):
+	"""Convert rendered template text (tags intact) to HTML receipt for PDF."""
+	import html as hl
+
+	chars = CHARS_PER_LINE.get(paper_width, 48)
+	width_px = "302px" if paper_width == "80mm" else "220px"
+	lines = []
+
+	for line in rendered.split("\n"):
+		raw = line.rstrip()
+		s = raw.strip()
+
+		if not s:
+			lines.append('<div style="line-height:0.5em">&nbsp;</div>')
+		elif s in ("[CUT]", "[PCUT]"):
+			lines.append('<hr style="border:none;border-top:1px dashed #000;margin:3px 0">')
+		elif s == "[DRAWER]":
+			pass
+		elif s == "[LINE]":
+			lines.append('<hr style="border:none;border-top:1px dashed #000;margin:2px 0">')
+		elif s == "[DLINE]":
+			lines.append('<hr style="border:none;border-top:2px solid #000;margin:2px 0">')
+		elif m := re.fullmatch(r"\[RULE:(.)\]", s):
+			lines.append(f"<div>{hl.escape(m.group(1) * chars)}</div>")
+		elif m := re.fullmatch(r"\[FEED(?::(\d+))?\]", s):
+			for _ in range(int(m.group(1) or 1)):
+				lines.append('<div style="line-height:0.5em">&nbsp;</div>')
+		elif m := re.fullmatch(r"\[BARCODE:([^:\]]+)(?::([^:\]]+))?(?::(\d+))?\]", s):
+			bc_type = (m.group(2) or "CODE39").upper()
+			lines.append(
+				f'<div style="text-align:center;font-size:0.8em;color:#555">'
+				f"&#9646; Barcode: {hl.escape(m.group(1))} ({bc_type}) &#9646;</div>"
+			)
+		elif m := re.fullmatch(r"\[QR:([^\]:]+)(?::(\d+))?\]", s):
+			lines.append(
+				f'<div style="text-align:center;font-size:0.8em;color:#555">'
+				f"&#9646; QR: {hl.escape(m.group(1))} &#9646;</div>"
+			)
+		elif m := re.fullmatch(r"\[HEX:([0-9A-Fa-f]+)\]", s):
+			lines.append(f'<div style="font-size:0.75em;color:#bbb">[HEX:{m.group(1)}]</div>')
+		else:
+			lines.append(_line_to_html(raw))
+
+	body = "\n".join(lines)
+	return f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+  body {{
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    width: {width_px};
+    margin: 0 auto;
+    padding: 8px;
+    line-height: 1.5;
+  }}
+  div {{ margin: 0; padding: 0; white-space: pre-wrap; word-break: break-all; }}
+</style></head>
+<body>{body}</body>
+</html>"""
 
 
 def _line_to_html(line):

@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Printer Server\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Printer\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Thermal Print Template\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Print Job\",\"col\":3}}]",
+ "content": "[{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Printer Server\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Printer\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Print Template\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Print Job\",\"col\":3}}]",
  "creation": "2026-03-06 00:00:00.000000",
  "doctype": "Workspace",
  "icon": "printer",
@@ -44,9 +44,9 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Thermal Print Template",
+   "label": "Print Template",
    "link_count": 0,
-   "link_to": "Thermal Print Template",
+   "link_to": "Print Template",
    "link_type": "DocType",
    "onboard": 1,
    "type": "Link"
@@ -69,7 +69,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-03-06 00:00:00.000000",
+ "modified": "2026-03-10 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Printer Server Configuration",
  "name": "Printer Server Configuration",
@@ -95,8 +95,8 @@
   {
    "color": "Yellow",
    "doc_view": "List",
-   "label": "Thermal Print Template",
-   "link_to": "Thermal Print Template",
+   "label": "Print Template",
+   "link_to": "Print Template",
    "type": "DocType"
   },
   {

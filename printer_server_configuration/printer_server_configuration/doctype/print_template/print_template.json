@@ -1,0 +1,215 @@
+{
+ "actions": [],
+ "autoname": "field:template_name",
+ "creation": "2026-03-10 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "template_name",
+  "document_type",
+  "format_type",
+  "col_break_header",
+  "section_thermal",
+  "paper_width",
+  "col_break_thermal",
+  "auto_cut",
+  "open_cash_drawer",
+  "section_thermal_tpl",
+  "template_content",
+  "section_pdf",
+  "print_format",
+  "col_break_pdf",
+  "letter_head",
+  "section_barcode",
+  "label_width_mm",
+  "label_height_mm",
+  "col_break_barcode",
+  "copies_per_doc",
+  "section_barcode_tpl",
+  "barcode_template",
+  "section_reference",
+  "help_html"
+ ],
+ "fields": [
+  {
+   "fieldname": "template_name",
+   "fieldtype": "Data",
+   "label": "Template Name",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "document_type",
+   "fieldtype": "Link",
+   "label": "Document Type",
+   "options": "DocType",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "format_type",
+   "fieldtype": "Select",
+   "label": "Format",
+   "options": "Thermal\nPDF\nBarcode",
+   "default": "Thermal",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "col_break_header",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_thermal",
+   "fieldtype": "Section Break",
+   "label": "Thermal Settings",
+   "depends_on": "eval:doc.format_type=='Thermal'"
+  },
+  {
+   "fieldname": "paper_width",
+   "fieldtype": "Select",
+   "label": "Paper Width",
+   "options": "80mm\n58mm",
+   "default": "80mm",
+   "depends_on": "eval:doc.format_type=='Thermal'"
+  },
+  {
+   "fieldname": "col_break_thermal",
+   "fieldtype": "Column Break",
+   "depends_on": "eval:doc.format_type=='Thermal'"
+  },
+  {
+   "fieldname": "auto_cut",
+   "fieldtype": "Check",
+   "label": "Auto Cut",
+   "default": "1",
+   "depends_on": "eval:doc.format_type=='Thermal'"
+  },
+  {
+   "fieldname": "open_cash_drawer",
+   "fieldtype": "Check",
+   "label": "Open Cash Drawer",
+   "depends_on": "eval:doc.format_type=='Thermal'"
+  },
+  {
+   "fieldname": "section_thermal_tpl",
+   "fieldtype": "Section Break",
+   "label": "Jinja Template",
+   "depends_on": "eval:doc.format_type=='Thermal'"
+  },
+  {
+   "fieldname": "template_content",
+   "fieldtype": "Code",
+   "label": "Template",
+   "options": "Jinja",
+   "depends_on": "eval:doc.format_type=='Thermal'"
+  },
+  {
+   "fieldname": "section_pdf",
+   "fieldtype": "Section Break",
+   "label": "PDF Settings",
+   "depends_on": "eval:doc.format_type=='PDF'"
+  },
+  {
+   "fieldname": "print_format",
+   "fieldtype": "Link",
+   "label": "Print Format",
+   "options": "Print Format",
+   "depends_on": "eval:doc.format_type=='PDF'"
+  },
+  {
+   "fieldname": "col_break_pdf",
+   "fieldtype": "Column Break",
+   "depends_on": "eval:doc.format_type=='PDF'"
+  },
+  {
+   "fieldname": "letter_head",
+   "fieldtype": "Link",
+   "label": "Letter Head",
+   "options": "Letter Head",
+   "depends_on": "eval:doc.format_type=='PDF'"
+  },
+  {
+   "fieldname": "section_barcode",
+   "fieldtype": "Section Break",
+   "label": "Barcode / ZPL Settings",
+   "depends_on": "eval:doc.format_type=='Barcode'"
+  },
+  {
+   "fieldname": "label_width_mm",
+   "fieldtype": "Float",
+   "label": "Label Width (mm)",
+   "default": "50",
+   "depends_on": "eval:doc.format_type=='Barcode'"
+  },
+  {
+   "fieldname": "label_height_mm",
+   "fieldtype": "Float",
+   "label": "Label Height (mm)",
+   "default": "30",
+   "depends_on": "eval:doc.format_type=='Barcode'"
+  },
+  {
+   "fieldname": "col_break_barcode",
+   "fieldtype": "Column Break",
+   "depends_on": "eval:doc.format_type=='Barcode'"
+  },
+  {
+   "fieldname": "copies_per_doc",
+   "fieldtype": "Int",
+   "label": "Copies per Document",
+   "default": "1",
+   "depends_on": "eval:doc.format_type=='Barcode'"
+  },
+  {
+   "fieldname": "section_barcode_tpl",
+   "fieldtype": "Section Break",
+   "label": "ZPL Template",
+   "depends_on": "eval:doc.format_type=='Barcode'"
+  },
+  {
+   "fieldname": "barcode_template",
+   "fieldtype": "Code",
+   "label": "ZPL Template",
+   "options": "Jinja",
+   "depends_on": "eval:doc.format_type=='Barcode'"
+  },
+  {
+   "fieldname": "section_reference",
+   "fieldtype": "Section Break",
+   "label": "Reference",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "help_html",
+   "fieldtype": "HTML",
+   "label": "Help",
+   "options": "<div style='font-family:monospace;font-size:12px;line-height:2'><b style='font-size:14px'>THERMAL FORMAT</b> &nbsp;<span style='color:#888'>— ESC/POS receipt printer</span><br>Uses the same tag system as Thermal Layout Template.<br><br><b>Alignment:</b> [C] [CENTER] &nbsp; [R] [RIGHT] &nbsp; [L] [LEFT]<br><b>Style:</b> [B]bold[/B] &nbsp; [U]underline[/U] &nbsp; [UU]double-u[/UU] &nbsp; [INV]inverted[/INV] &nbsp; [FLIP]flip[/FLIP] &nbsp; [FB]fontB[/FB]<br><b>Size:</b> [BIG]2x2[/BIG] &nbsp; [W2]wide[/W2] &nbsp; [H2]tall[/H2] &nbsp; [W:n]width n[/W:n] &nbsp; [H:n]height n[/H:n]<br><b>Lines:</b> [LINE] &nbsp; [DLINE] &nbsp; [RULE:char]<br><b>Control:</b> [CUT] &nbsp; [PCUT] &nbsp; [FEED:n] &nbsp; [DRAWER]<br><b>Barcodes:</b> [BARCODE:value:TYPE] &nbsp; [QR:value] &nbsp; [HEX:1B40]<br><b>Data:</b> {{ doc['items'] }} for child tables &nbsp; {{ doc.field_name }} for fields<br><br><hr><b style='font-size:14px'>PDF FORMAT</b> &nbsp;<span style='color:#888'>— any CUPS printer, generates PDF from ERPNext print format</span><br>Select a Print Format and optional Letter Head.<br>The document is rendered to PDF and sent directly to the chosen printer via IPP.<br>No template editing required — layout is controlled by the ERPNext Print Format designer.<br><br><hr><b style='font-size:14px'>BARCODE FORMAT</b> &nbsp;<span style='color:#888'>— ZPL label printer (Zebra, TSC, etc.)</span><br>Write a Jinja template that renders to ZPL code. Sent RAW to the printer.<br><br><b>ZPL basics:</b><br><pre style='margin:4px 0'>^XA                         label start\n^XZ                         label end\n^PW406                      print width in dots (203dpi: 1mm≈8dots)\n^LL240                      label length in dots\n^FO20,10^CF0,40^FD{{ doc.name }}^FS    text at x=20,y=10 size=40\n^FO20,60^BY2^BCN,80,Y,N,N^FD{{ doc.name }}^FS  Code128 barcode\n^FO20,60^BQN,2,5^FDQA,{{ doc.name }}^FS  QR code\n^FO20,10^GB366,1,2^FS       horizontal line</pre><br><b>Barcode commands:</b><br>^BC — Code128 &nbsp; ^BE — EAN-13 &nbsp; ^B3 — Code39 &nbsp; ^BQ — QR<br><br><b>Example (item label):</b><br><pre style='margin:4px 0'>^XA\n^PW406^LL240\n^FO20,15^CF0,35^FD{{ doc.item_name[:24] }}^FS\n^FO20,60^CF0,25^FDRs.{{ doc.standard_rate }}^FS\n^FO200,15^BQN,2,5^FDQA,{{ doc.item_code }}^FS\n^XZ</pre></div>"
+  }
+ ],
+ "links": [],
+ "modified": "2026-03-10 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Printer Server Configuration",
+ "name": "Print Template",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
