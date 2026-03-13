@@ -203,6 +203,9 @@ def render_to_escpos(template_doc, context):
 	if getattr(template_doc, "open_cash_drawer", False):
 		p.cashdraw(2)
 
+	# Reset left margin to 0 (GS L 0 0)
+	p._raw(b"\x1d\x4c\x00\x00")
+
 	_process_escpos(p, rendered, chars)
 
 	if getattr(template_doc, "auto_cut", True):
