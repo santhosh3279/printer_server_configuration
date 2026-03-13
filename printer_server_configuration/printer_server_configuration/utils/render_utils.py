@@ -23,15 +23,13 @@ import frappe
 
 CHARS_PER_LINE = {"80mm": 46, "58mm": 30}
 
-# Left margin in dots at 203 DPI (~3.5mm each side)
-_LEFT_MARGIN_DOTS = {"80mm": 28, "58mm": 22}
-
 _RESET = dict(
 	align="left",
 	bold=False,
 	underline=0,
 	double_width=False,
 	double_height=False,
+	normal_textsize=True,
 	font="a",
 	invert=False,
 	flip=False,
@@ -204,10 +202,6 @@ def render_to_escpos(template_doc, context):
 	p = Dummy()
 	if getattr(template_doc, "open_cash_drawer", False):
 		p.cashdraw(2)
-
-	# Set 3.5mm left margin (GS L nL nH)
-	margin_dots = _LEFT_MARGIN_DOTS.get(paper_width, 28)
-	p._raw(bytes([0x1D, 0x4C, margin_dots & 0xFF, margin_dots >> 8]))
 
 	_process_escpos(p, rendered, chars)
 
