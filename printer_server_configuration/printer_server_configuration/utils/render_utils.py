@@ -23,6 +23,9 @@ import frappe
 
 CHARS_PER_LINE = {"80mm": 46, "58mm": 30}
 
+# Print area width in dots at 203 DPI (8 dots/mm)
+_PRINT_WIDTH_DOTS = {"80mm": 576, "58mm": 384}
+
 _RESET = dict(
 	align="left",
 	bold=False,
@@ -203,8 +206,10 @@ def render_to_escpos(template_doc, context):
 	if getattr(template_doc, "open_cash_drawer", False):
 		p.cashdraw(2)
 
-	# Reset left margin to 0 (GS L 0 0)
+	# Reset left margin to 0 (GS L 0 0) and set full print area width (GS W nL nH)
+	width_dots = _PRINT_WIDTH_DOTS.get(paper_width, 576)
 	p._raw(b"\x1d\x4c\x00\x00")
+	p._raw(bytes([0x1D, 0x57, width_dots & 0xFF, width_dots >> 8]))
 
 	_process_escpos(p, rendered, chars)
 
@@ -212,6 +217,17 @@ def render_to_escpos(template_doc, context):
 		p.cut()
 
 	return p.output
+
+
+def _raster_line(p, width_dots=576, height_dots=1):
+	"""Print a solid black horizontal line using GS v 0 (raster bit image)."""
+	bytes_per_row = (width_dots + 7) // 8
+	data = b"\xff" * bytes_per_row * height_dots
+	# GS v 0  m  xL xH  yL yH  <data>
+	p._raw(bytes([0x1D, 0x76, 0x30, 0x00,
+		bytes_per_row & 0xFF, bytes_per_row >> 8,
+		height_dots & 0xFF, height_dots >> 8]) + data)
+	p.text("\n")
 
 
 def _process_escpos(p, content, chars):
@@ -232,7 +248,7 @@ def _process_escpos(p, content, chars):
 			p.cashdraw(2)
 		elif s == "[LINE]":
 			p.set(**_RESET)
-			p.text("-" * chars + "\n")
+			_raster_line(p, width_dots=576)
 		elif s == "[SLINE]":
 			p.set(**_RESET)
 			p.text("\u2500" * chars + "\n")
