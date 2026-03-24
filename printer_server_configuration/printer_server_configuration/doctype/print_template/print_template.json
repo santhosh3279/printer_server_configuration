@@ -25,6 +25,7 @@
   "label_height_mm",
   "col_break_barcode",
   "copies_per_doc",
+  "price_list",
   "section_barcode_tpl",
   "barcode_template",
   "section_reference",
@@ -50,7 +51,7 @@
    "fieldname": "format_type",
    "fieldtype": "Select",
    "label": "Format",
-   "options": "Thermal\nPDF\nBarcode",
+   "options": "Thermal\nPDF\nBarcode\nHTML",
    "default": "Thermal",
    "reqd": 1,
    "in_list_view": 1
@@ -102,7 +103,7 @@
    "fieldtype": "Code",
    "label": "Template",
    "options": "Jinja",
-   "depends_on": "eval:doc.format_type=='Thermal'"
+   "depends_on": "eval:['Thermal','HTML'].includes(doc.format_type)"
   },
   {
    "fieldname": "section_pdf",
@@ -159,6 +160,13 @@
    "fieldtype": "Int",
    "label": "Copies per Document",
    "default": "1",
+   "depends_on": "eval:doc.format_type=='Barcode'"
+  },
+  {
+   "fieldname": "price_list",
+   "fieldtype": "Link",
+   "label": "Price List",
+   "options": "Price List",
    "depends_on": "eval:doc.format_type=='Barcode'"
   },
   {

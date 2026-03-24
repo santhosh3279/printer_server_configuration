@@ -23,6 +23,8 @@ class PrintTemplate(Document):
 			return frappe.get_print(
 				self.document_type, document_name, self.print_format, letterhead=self.letter_head
 			)
+		elif self.format_type == "HTML":
+			return frappe.render_template(self.template_content or "", ctx)
 
 	@frappe.whitelist()
 	def preview_pdf(self, document_name=None):
@@ -58,6 +60,11 @@ pre{{background:#f5f5f5;padding:12px;border:1px solid #ddd;white-space:pre-wrap}
 <pre>{html_module.escape(zpl)}</pre>
 </body></html>"""
 			return base64.b64encode(get_pdf(preview_html)).decode()
+
+		elif self.format_type == "HTML":
+			ctx = build_context(self, document_name)
+			html = frappe.render_template(self.template_content or "", ctx)
+			return base64.b64encode(get_pdf(html)).decode()
 
 	@frappe.whitelist()
 	def print_doc(self, printer, document_name=None, copies=1):
@@ -108,3 +115,16 @@ pre{{background:#f5f5f5;padding:12px;border:1px solid #ddd;white-space:pre-wrap}
 					server_doc, printer_doc.cups_printer_name, raw_bytes, self.template_name
 				)
 			return {"success": True, "cups_job_id": job_id, "copies_sent": total}
+
+		elif self.format_type == "HTML":
+			from frappe.utils.pdf import get_pdf
+
+			ctx = build_context(self, document_name)
+			html = frappe.render_template(self.template_content or "", ctx)
+			pdf_bytes = get_pdf(html)
+			job_id = None
+			for _ in range(copies):
+				job_id = send_pdf_to_cups(
+					server_doc, printer_doc.cups_printer_name, pdf_bytes, document_name or self.template_name
+				)
+			return {"success": True, "cups_job_id": job_id}

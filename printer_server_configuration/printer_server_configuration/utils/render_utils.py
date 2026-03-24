@@ -47,11 +47,38 @@ _RESET = dict(
 
 def build_context(template_doc, document_name):
 	"""Return Jinja context dict with doc wrapped in SimpleNamespace."""
-	context = {"doc": types.SimpleNamespace()}
+	context = {"doc": types.SimpleNamespace(), "document_name": document_name or ""}
 	if template_doc.document_type and document_name:
 		d = frappe.get_doc(template_doc.document_type, document_name).as_dict()
+		price_list = getattr(template_doc, "price_list", None)
+		if price_list:
+			_inject_price_list_rates(d, template_doc.document_type, price_list)
 		context["doc"] = _ns(d)
 	return context
+
+
+def _get_item_price(item_code, price_list):
+	return frappe.db.get_value(
+		"Item Price",
+		{"item_code": item_code, "price_list": price_list},
+		"price_list_rate",
+	) or 0
+
+
+def _inject_price_list_rates(d, document_type, price_list):
+	"""Inject price_list_rate into doc dict from Item Price."""
+	if document_type == "Item":
+		item_code = d.get("name") or d.get("item_code")
+		if item_code:
+			d["price_list_rate"] = _get_item_price(item_code, price_list)
+		return
+
+	items = d.get("items")
+	if items and isinstance(items, list):
+		for row in items:
+			item_code = row.get("item_code")
+			if item_code:
+				row["price_list_rate"] = _get_item_price(item_code, price_list)
 
 
 def _ns(d):
