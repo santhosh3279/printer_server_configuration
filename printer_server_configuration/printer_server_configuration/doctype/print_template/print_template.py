@@ -8,29 +8,71 @@ from printer_server_configuration.printer_server_configuration.utils.render_util
 )
 
 
+def _inject_style(html, style):
+	if "<head>" in html:
+		return html.replace("<head>", f"<head>{style}", 1)
+	if "<html>" in html:
+		return html.replace("<html>", f"<html><head>{style}</head>", 1)
+	return style + html
+
+
+def _wrap_body(html, css_class):
+	"""Wrap content inside <body>…</body> in a div; falls back to wrapping the whole string."""
+	import re
+	m = re.search(r"<body[^>]*>", html)
+	close = html.rfind("</body>")
+	if m and close != -1:
+		return (
+			html[: m.end()]
+			+ f'<div class="{css_class}">'
+			+ html[m.end() : close]
+			+ "</div>"
+			+ html[close:]
+		)
+	return f'<div class="{css_class}">{html}</div>'
+
+
 def _build_custom_pdf(html, page_size, orientation):
 	"""Prepare HTML and wkhtmltopdf options for Custom PDF.
 
-	A5 is treated as "top half of A4": the PDF page is kept at A4 so the
-	printer does not need to change paper, and CSS constrains the content
-	to the first 148 mm (portrait A5 height).
+	A5 always outputs on an A4 sheet (no paper change needed).
+	- Landscape: content placed flat in the top half of portrait A4.
+	  Top of content = top of page, bottom of content = middle of page.
+	- Portrait: content rotated 90° CCW inside the top half of portrait A4.
+	  Top edge of content → left edge of A4, bottom edge → right edge of A4.
 	"""
-	if page_size == "A5":
+	if page_size != "A5":
+		return html, {"page-size": page_size, "orientation": orientation}
+
+	if orientation == "Landscape":
+		# A5 landscape (210 × 148 mm) fills the top half of portrait A4 — no rotation
+		style = (
+			"<style>"
+			"@page{size:A4 portrait;margin:0}"
+			"html,body{margin:0;padding:0;width:210mm;height:148mm;overflow:hidden}"
+			"</style>"
+		)
+		html = _inject_style(html, style)
+	else:
+		# Portrait: rotate content -90° so top edge → left of A4, bottom edge → right of A4.
+		# A 148 × 210 mm element at origin with transform: translateY(148mm) rotate(-90deg)
+		# ends up occupying x=[0,210mm], y=[0,148mm] on the A4 sheet.
 		style = (
 			"<style>"
 			"@page{size:A4 portrait;margin:0}"
 			"html,body{margin:0;padding:0}"
-			"body{width:210mm;height:148mm;max-height:148mm;"
-			"overflow:hidden;padding:10mm;box-sizing:border-box}"
+			".a5-wrap{"
+			"position:absolute;top:0;left:0;"
+			"width:148mm;height:210mm;"
+			"transform-origin:0 0;"
+			"transform:translateY(148mm) rotate(-90deg)"
+			"}"
 			"</style>"
 		)
-		if "<head>" in html:
-			html = html.replace("<head>", f"<head>{style}", 1)
-		else:
-			html = style + html
-		return html, {"page-size": "A4", "orientation": "Portrait"}
+		html = _inject_style(html, style)
+		html = _wrap_body(html, "a5-wrap")
 
-	return html, {"page-size": page_size, "orientation": orientation}
+	return html, {"page-size": "A4", "orientation": "Portrait"}
 
 
 class PrintTemplate(Document):
