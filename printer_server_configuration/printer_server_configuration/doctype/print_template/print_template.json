@@ -20,6 +20,13 @@
   "print_format",
   "col_break_pdf",
   "letter_head",
+  "section_custom_pdf",
+  "custom_pdf_page_size",
+  "custom_pdf_orientation",
+  "col_break_custom_pdf",
+  "custom_pdf_letter_head",
+  "section_custom_pdf_tpl",
+  "custom_pdf_template",
   "section_barcode",
   "label_width_mm",
   "label_height_mm",
@@ -51,7 +58,7 @@
    "fieldname": "format_type",
    "fieldtype": "Select",
    "label": "Format",
-   "options": "Thermal\nPDF\nBarcode\nHTML",
+   "options": "Thermal\nPDF\nCustom PDF\nBarcode\nHTML",
    "default": "Thermal",
    "reqd": 1,
    "in_list_view": 1
@@ -129,6 +136,53 @@
    "label": "Letter Head",
    "options": "Letter Head",
    "depends_on": "eval:doc.format_type=='PDF'"
+  },
+  {
+   "fieldname": "section_custom_pdf",
+   "fieldtype": "Section Break",
+   "label": "Custom PDF Settings",
+   "depends_on": "eval:doc.format_type=='Custom PDF'"
+  },
+  {
+   "fieldname": "custom_pdf_page_size",
+   "fieldtype": "Select",
+   "label": "Page Size",
+   "options": "A4\nLetter\nA5\nLegal",
+   "default": "A4",
+   "depends_on": "eval:doc.format_type=='Custom PDF'"
+  },
+  {
+   "fieldname": "custom_pdf_orientation",
+   "fieldtype": "Select",
+   "label": "Orientation",
+   "options": "Portrait\nLandscape",
+   "default": "Portrait",
+   "depends_on": "eval:doc.format_type=='Custom PDF'"
+  },
+  {
+   "fieldname": "col_break_custom_pdf",
+   "fieldtype": "Column Break",
+   "depends_on": "eval:doc.format_type=='Custom PDF'"
+  },
+  {
+   "fieldname": "custom_pdf_letter_head",
+   "fieldtype": "Link",
+   "label": "Letter Head",
+   "options": "Letter Head",
+   "depends_on": "eval:doc.format_type=='Custom PDF'"
+  },
+  {
+   "fieldname": "section_custom_pdf_tpl",
+   "fieldtype": "Section Break",
+   "label": "HTML Template",
+   "depends_on": "eval:doc.format_type=='Custom PDF'"
+  },
+  {
+   "fieldname": "custom_pdf_template",
+   "fieldtype": "Code",
+   "label": "HTML Template",
+   "options": "HTML",
+   "depends_on": "eval:doc.format_type=='Custom PDF'"
   },
   {
    "fieldname": "section_barcode",

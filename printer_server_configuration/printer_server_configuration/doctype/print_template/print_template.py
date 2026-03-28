@@ -23,6 +23,9 @@ class PrintTemplate(Document):
 			return frappe.get_print(
 				self.document_type, document_name, self.print_format, letterhead=self.letter_head
 			)
+		elif self.format_type == "Custom PDF":
+			return frappe.render_template(self.custom_pdf_template or "", ctx)
+
 		elif self.format_type == "HTML":
 			return frappe.render_template(self.template_content or "", ctx)
 
@@ -60,6 +63,18 @@ pre{{background:#f5f5f5;padding:12px;border:1px solid #ddd;white-space:pre-wrap}
 <pre>{html_module.escape(zpl)}</pre>
 </body></html>"""
 			return base64.b64encode(get_pdf(preview_html)).decode()
+
+		elif self.format_type == "Custom PDF":
+			ctx = build_context(self, document_name)
+			html = frappe.render_template(self.custom_pdf_template or "", ctx)
+			if self.custom_pdf_letter_head:
+				lh = frappe.get_doc("Letter Head", self.custom_pdf_letter_head)
+				html = f"<div>{lh.content}</div>{html}"
+			options = {
+				"page-size": self.custom_pdf_page_size or "A4",
+				"orientation": self.custom_pdf_orientation or "Portrait",
+			}
+			return base64.b64encode(get_pdf(html, options=options)).decode()
 
 		elif self.format_type == "HTML":
 			ctx = build_context(self, document_name)
@@ -115,6 +130,26 @@ pre{{background:#f5f5f5;padding:12px;border:1px solid #ddd;white-space:pre-wrap}
 					server_doc, printer_doc.cups_printer_name, raw_bytes, self.template_name
 				)
 			return {"success": True, "cups_job_id": job_id, "copies_sent": total}
+
+		elif self.format_type == "Custom PDF":
+			from frappe.utils.pdf import get_pdf
+
+			ctx = build_context(self, document_name)
+			html = frappe.render_template(self.custom_pdf_template or "", ctx)
+			if self.custom_pdf_letter_head:
+				lh = frappe.get_doc("Letter Head", self.custom_pdf_letter_head)
+				html = f"<div>{lh.content}</div>{html}"
+			options = {
+				"page-size": self.custom_pdf_page_size or "A4",
+				"orientation": self.custom_pdf_orientation or "Portrait",
+			}
+			pdf_bytes = get_pdf(html, options=options)
+			job_id = None
+			for _ in range(copies):
+				job_id = send_pdf_to_cups(
+					server_doc, printer_doc.cups_printer_name, pdf_bytes, document_name or self.template_name
+				)
+			return {"success": True, "cups_job_id": job_id}
 
 		elif self.format_type == "HTML":
 			from frappe.utils.pdf import get_pdf

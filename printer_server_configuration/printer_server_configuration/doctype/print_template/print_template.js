@@ -32,7 +32,7 @@ function _ask_doc_name(frm, cb) {
 				fieldname: "document_name",
 				fieldtype: "Link",
 				options: frm.doc.document_type,
-				reqd: frm.doc.format_type === "PDF" ? 1 : 0,
+				reqd: ["PDF", "Custom PDF"].includes(frm.doc.format_type) ? 1 : 0,
 			},
 			({ document_name }) => cb(document_name || null),
 			__("Select Document"),
@@ -72,11 +72,11 @@ function _pick_printer_and_doc(frm, cb) {
 					fieldname: "document_name",
 					fieldtype: "Link",
 					options: frm.doc.document_type,
-					reqd: frm.doc.format_type === "PDF" ? 1 : 0,
+					reqd: ["PDF", "Custom PDF"].includes(frm.doc.format_type) ? 1 : 0,
 				});
 			}
 
-			if (frm.doc.format_type === "PDF") {
+			if (["PDF", "Custom PDF"].includes(frm.doc.format_type)) {
 				fields.push({
 					label: __("Copies"),
 					fieldname: "copies",
