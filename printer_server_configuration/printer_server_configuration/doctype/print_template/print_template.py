@@ -16,6 +16,15 @@ def _inject_style(html, style):
 	return style + html
 
 
+def _suppress_frappe_margins(html):
+	"""Inject empty header/footer marker divs so frappe's prepare_header_footer
+	does not fall into the else-branch and unconditionally set margin-top/bottom to 15mm."""
+	markers = '<div id="header-html"></div><div id="footer-html"></div>'
+	if "</body>" in html:
+		return html.replace("</body>", markers + "</body>", 1)
+	return html + markers
+
+
 def _wrap_body(html, css_class):
 	"""Wrap content inside <body>…</body> in a div; falls back to wrapping the whole string."""
 	import re
@@ -53,6 +62,7 @@ def _build_custom_pdf(html, page_size, orientation):
 			"</style>"
 		)
 		html = _inject_style(html, style)
+		html = _suppress_frappe_margins(html)
 	else:
 		# Portrait: rotate content -90° so top edge → left of A4, bottom edge → right of A4.
 		# A 148 × 210 mm element at origin with transform: translateY(148mm) rotate(-90deg)
@@ -70,6 +80,7 @@ def _build_custom_pdf(html, page_size, orientation):
 		)
 		html = _inject_style(html, style)
 		html = _wrap_body(html, "a5-wrap")
+		html = _suppress_frappe_margins(html)
 
 	return html, {
 		"page-size": "A4",
