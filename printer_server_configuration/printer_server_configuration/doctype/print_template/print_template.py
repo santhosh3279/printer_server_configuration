@@ -48,7 +48,7 @@ def _build_custom_pdf(html, page_size, orientation):
 		# A5 landscape (210 × 148 mm) fills the top half of portrait A4 — no rotation
 		style = (
 			"<style>"
-			"@page{size:A4 portrait}"
+			"@page{size:A4 portrait;margin:0}"
 			"html,body{width:210mm;height:148mm;overflow:hidden}"
 			"</style>"
 		)
@@ -59,7 +59,7 @@ def _build_custom_pdf(html, page_size, orientation):
 		# ends up occupying x=[0,210mm], y=[0,148mm] on the A4 sheet.
 		style = (
 			"<style>"
-			"@page{size:A4 portrait}"
+			"@page{size:A4 portrait;margin:0}"
 			".a5-wrap{"
 			"position:absolute;top:0;left:0;"
 			"width:148mm;height:210mm;"
