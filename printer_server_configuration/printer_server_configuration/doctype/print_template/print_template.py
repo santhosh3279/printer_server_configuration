@@ -18,8 +18,15 @@ def _inject_style(html, style):
 
 def _suppress_frappe_margins(html):
 	"""Inject empty header/footer marker divs so frappe's prepare_header_footer
-	does not fall into the else-branch and unconditionally set margin-top/bottom to 15mm."""
-	markers = '<div id="header-html"></div><div id="footer-html"></div>'
+	does not fall into the else-branch and unconditionally set margin-top/bottom to 15mm.
+	Skips injection if the template already defines its own header/footer element."""
+	markers = ""
+	if 'id="header-html"' not in html and "id='header-html'" not in html:
+		markers += '<div id="header-html"></div>'
+	if 'id="footer-html"' not in html and "id='footer-html'" not in html:
+		markers += '<div id="footer-html"></div>'
+	if not markers:
+		return html
 	if "</body>" in html:
 		return html.replace("</body>", markers + "</body>", 1)
 	return html + markers
