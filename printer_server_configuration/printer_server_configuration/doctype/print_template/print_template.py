@@ -93,22 +93,20 @@ def _build_custom_pdf(html, page_size, orientation):
 		return html, {"page-size": page_size, "orientation": orientation}, None
 
 	if orientation == "Landscape":
-		style = "<style>@page{size:210mm 148.5mm;margin:0}</style>"
+		style = "<style>@page{size:A5 landscape;margin:0}</style>"
 		options = {
-			"page-size": "Custom",
-			"page-width": "210mm",
-			"page-height": "148.5mm",
+			"page-size": "A5",
+			"orientation": "Landscape",
 			"margin-top": "0mm",
 			"margin-bottom": "0mm",
 			"margin-left": "0mm",
 			"margin-right": "0mm",
 		}
 	else:  # Portrait
-		style = "<style>@page{size:148mm 210mm;margin:0}</style>"
+		style = "<style>@page{size:A5 portrait;margin:0}</style>"
 		options = {
-			"page-size": "Custom",
-			"page-width": "148mm",
-			"page-height": "210mm",
+			"page-size": "A5",
+			"orientation": "Portrait",
 			"margin-top": "0mm",
 			"margin-bottom": "0mm",
 			"margin-left": "0mm",
