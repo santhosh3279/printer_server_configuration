@@ -71,7 +71,14 @@ def _build_custom_pdf(html, page_size, orientation):
 		html = _inject_style(html, style)
 		html = _wrap_body(html, "a5-wrap")
 
-	return html, {"page-size": "A4", "orientation": "Portrait"}
+	return html, {
+		"page-size": "A4",
+		"orientation": "Portrait",
+		"margin-top": "0mm",
+		"margin-bottom": "0mm",
+		"margin-left": "0mm",
+		"margin-right": "0mm",
+	}
 
 
 class PrintTemplate(Document):
