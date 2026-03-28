@@ -32,71 +32,92 @@ def _suppress_frappe_margins(html):
 	return html + markers
 
 
-def _wrap_body(html, css_class):
-	"""Wrap content inside <body>…</body> in a div; falls back to wrapping the whole string."""
-	import re
-	m = re.search(r"<body[^>]*>", html)
-	close = html.rfind("</body>")
-	if m and close != -1:
-		return (
-			html[: m.end()]
-			+ f'<div class="{css_class}">'
-			+ html[m.end() : close]
-			+ "</div>"
-			+ html[close:]
-		)
-	return f'<div class="{css_class}">{html}</div>'
+def _place_a5_on_a4(pdf_bytes, orientation):
+	"""Place each A5 page from a wkhtmltopdf-generated PDF onto the top half of an A4 sheet.
+
+	- Landscape: A5 page (210×148.5 mm) placed at the top of portrait A4, no rotation.
+	  Content top = top of A4, content bottom = middle of A4.
+	- Portrait: A5 page (148×210 mm) rotated 90° CCW, placed at the top of portrait A4.
+	  Content top edge → left edge of A4, content bottom edge → right edge of A4.
+
+	Rotation math (row-vector PDF convention, CCW 90°):
+	  (x,y) → (-y, x)  after rotate(90)
+	  Corners of 148×210mm page end up at x=[-210,0], y=[0,148] (all in mm).
+	  Translate by tx=210mm, ty=(297-148)mm to land at x=[0,210], y=[149,297] (top half of A4).
+	"""
+	from io import BytesIO
+
+	from pypdf import PdfReader, PdfWriter, Transformation
+
+	MM = 72 / 25.4  # 1 mm in PDF points
+	A4_W = 210 * MM  # ≈ 595.28 pt
+	A4_H = 297 * MM  # ≈ 841.89 pt
+
+	reader = PdfReader(BytesIO(pdf_bytes))
+	writer = PdfWriter()
+
+	for src_page in reader.pages:
+		src_w = float(src_page.mediabox.width)   # points
+		src_h = float(src_page.mediabox.height)  # points
+
+		a4_page = writer.add_blank_page(width=A4_W, height=A4_H)
+
+		if orientation == "Portrait":
+			# Rotate 90° CCW: content moves to x=[-src_h, 0], y=[0, src_w]
+			# Translate by (src_h, A4_H - src_w) to land at top of A4
+			tf = Transformation().rotate(90).translate(src_h, A4_H - src_w)
+		else:
+			# No rotation — translate to top of A4
+			tf = Transformation().translate(0, A4_H - src_h)
+
+		a4_page.merge_transformed_page(src_page, tf)
+
+	buf = BytesIO()
+	writer.write(buf)
+	return buf.getvalue()
 
 
 def _build_custom_pdf(html, page_size, orientation):
 	"""Prepare HTML and wkhtmltopdf options for Custom PDF.
 
-	A5 always outputs on an A4 sheet (no paper change needed).
-	- Landscape: content placed flat in the top half of portrait A4.
-	  Top of content = top of page, bottom of content = middle of page.
-	- Portrait: content rotated 90° CCW inside the top half of portrait A4.
-	  Top edge of content → left edge of A4, bottom edge → right edge of A4.
+	Returns (html, options, a5_orientation).
+	- a5_orientation is "Portrait" or "Landscape" when A5 post-processing is needed, else None.
+
+	For A5: wkhtmltopdf renders into native A5 page dimensions so it paginates
+	automatically when content overflows. Each resulting page is then placed onto
+	the top half of an A4 sheet via pypdf (_place_a5_on_a4).
+	  Landscape: page-width=210mm, page-height=148.5mm
+	  Portrait:  page-width=148mm,  page-height=210mm
 	"""
 	if page_size != "A5":
-		return html, {"page-size": page_size, "orientation": orientation}
+		return html, {"page-size": page_size, "orientation": orientation}, None
 
 	if orientation == "Landscape":
-		# A5 landscape (210 × 148 mm) fills the top half of portrait A4 — no rotation
-		style = (
-			"<style>"
-			"@page{size:A4 portrait;margin:0}"
-			"html,body{width:210mm;height:148mm;overflow:hidden}"
-			"</style>"
-		)
-		html = _inject_style(html, style)
-		html = _suppress_frappe_margins(html)
-	else:
-		# Portrait: rotate content -90° so top edge → left of A4, bottom edge → right of A4.
-		# A 148 × 210 mm element at origin with transform: translateY(148mm) rotate(-90deg)
-		# ends up occupying x=[0,210mm], y=[0,148mm] on the A4 sheet.
-		style = (
-			"<style>"
-			"@page{size:A4 portrait;margin:0}"
-			".a5-wrap{"
-			"position:absolute;top:0;left:0;"
-			"width:148mm;height:210mm;"
-			"transform-origin:0 0;"
-			"transform:translateY(148mm) rotate(-90deg)"
-			"}"
-			"</style>"
-		)
-		html = _inject_style(html, style)
-		html = _wrap_body(html, "a5-wrap")
-		html = _suppress_frappe_margins(html)
+		style = "<style>@page{size:210mm 148.5mm;margin:0}</style>"
+		options = {
+			"page-size": "Custom",
+			"page-width": "210mm",
+			"page-height": "148.5mm",
+			"margin-top": "0mm",
+			"margin-bottom": "0mm",
+			"margin-left": "0mm",
+			"margin-right": "0mm",
+		}
+	else:  # Portrait
+		style = "<style>@page{size:148mm 210mm;margin:0}</style>"
+		options = {
+			"page-size": "Custom",
+			"page-width": "148mm",
+			"page-height": "210mm",
+			"margin-top": "0mm",
+			"margin-bottom": "0mm",
+			"margin-left": "0mm",
+			"margin-right": "0mm",
+		}
 
-	return html, {
-		"page-size": "A4",
-		"orientation": "Portrait",
-		"margin-top": "0mm",
-		"margin-bottom": "0mm",
-		"margin-left": "0mm",
-		"margin-right": "0mm",
-	}
+	html = _inject_style(html, style)
+	html = _suppress_frappe_margins(html)
+	return html, options, orientation
 
 
 class PrintTemplate(Document):
@@ -161,10 +182,13 @@ pre{{background:#f5f5f5;padding:12px;border:1px solid #ddd;white-space:pre-wrap}
 			if self.custom_pdf_letter_head:
 				lh = frappe.get_doc("Letter Head", self.custom_pdf_letter_head)
 				html = f"<div>{lh.content}</div>{html}"
-			html, options = _build_custom_pdf(
+			html, options, a5_orient = _build_custom_pdf(
 				html, self.custom_pdf_page_size or "A4", self.custom_pdf_orientation or "Portrait"
 			)
-			return base64.b64encode(get_pdf(html, options=options)).decode()
+			pdf_bytes = get_pdf(html, options=options)
+			if a5_orient:
+				pdf_bytes = _place_a5_on_a4(pdf_bytes, a5_orient)
+			return base64.b64encode(pdf_bytes).decode()
 
 		elif self.format_type == "HTML":
 			ctx = build_context(self, document_name)
@@ -229,10 +253,12 @@ pre{{background:#f5f5f5;padding:12px;border:1px solid #ddd;white-space:pre-wrap}
 			if self.custom_pdf_letter_head:
 				lh = frappe.get_doc("Letter Head", self.custom_pdf_letter_head)
 				html = f"<div>{lh.content}</div>{html}"
-			html, options = _build_custom_pdf(
+			html, options, a5_orient = _build_custom_pdf(
 				html, self.custom_pdf_page_size or "A4", self.custom_pdf_orientation or "Portrait"
 			)
 			pdf_bytes = get_pdf(html, options=options)
+			if a5_orient:
+				pdf_bytes = _place_a5_on_a4(pdf_bytes, a5_orient)
 			job_id = None
 			for _ in range(copies):
 				job_id = send_pdf_to_cups(
