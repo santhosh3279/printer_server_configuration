@@ -8,15 +8,6 @@ from printer_server_configuration.printer_server_configuration.utils.render_util
 )
 
 
-def _inject_page_style(html, page_size, orientation):
-	"""Inject a CSS @page rule so wkhtmltopdf honours the chosen size and orientation."""
-	size_val = f"{page_size} {'landscape' if orientation == 'Landscape' else 'portrait'}"
-	style = f"<style>@page{{size:{size_val};margin:10mm}}</style>"
-	if "<head>" in html:
-		return html.replace("<head>", f"<head>{style}", 1)
-	return style + html
-
-
 class PrintTemplate(Document):
 	@frappe.whitelist()
 	def preview(self, document_name=None):
@@ -74,17 +65,14 @@ pre{{background:#f5f5f5;padding:12px;border:1px solid #ddd;white-space:pre-wrap}
 			return base64.b64encode(get_pdf(preview_html)).decode()
 
 		elif self.format_type == "Custom PDF":
-			page_size = self.custom_pdf_page_size or "A4"
-			orientation = self.custom_pdf_orientation or "Portrait"
 			ctx = build_context(self, document_name)
 			html = frappe.render_template(self.custom_pdf_template or "", ctx)
 			if self.custom_pdf_letter_head:
 				lh = frappe.get_doc("Letter Head", self.custom_pdf_letter_head)
 				html = f"<div>{lh.content}</div>{html}"
-			html = _inject_page_style(html, page_size, orientation)
 			options = {
-				"page-size": page_size,
-				"orientation": orientation,
+				"page-size": self.custom_pdf_page_size or "A4",
+				"orientation": self.custom_pdf_orientation or "Portrait",
 			}
 			return base64.b64encode(get_pdf(html, options=options)).decode()
 
@@ -146,17 +134,14 @@ pre{{background:#f5f5f5;padding:12px;border:1px solid #ddd;white-space:pre-wrap}
 		elif self.format_type == "Custom PDF":
 			from frappe.utils.pdf import get_pdf
 
-			page_size = self.custom_pdf_page_size or "A4"
-			orientation = self.custom_pdf_orientation or "Portrait"
 			ctx = build_context(self, document_name)
 			html = frappe.render_template(self.custom_pdf_template or "", ctx)
 			if self.custom_pdf_letter_head:
 				lh = frappe.get_doc("Letter Head", self.custom_pdf_letter_head)
 				html = f"<div>{lh.content}</div>{html}"
-			html = _inject_page_style(html, page_size, orientation)
 			options = {
-				"page-size": page_size,
-				"orientation": orientation,
+				"page-size": self.custom_pdf_page_size or "A4",
+				"orientation": self.custom_pdf_orientation or "Portrait",
 			}
 			pdf_bytes = get_pdf(html, options=options)
 			job_id = None
