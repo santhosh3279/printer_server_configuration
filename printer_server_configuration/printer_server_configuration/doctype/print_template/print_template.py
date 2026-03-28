@@ -8,6 +8,31 @@ from printer_server_configuration.printer_server_configuration.utils.render_util
 )
 
 
+def _build_custom_pdf(html, page_size, orientation):
+	"""Prepare HTML and wkhtmltopdf options for Custom PDF.
+
+	A5 is treated as "top half of A4": the PDF page is kept at A4 so the
+	printer does not need to change paper, and CSS constrains the content
+	to the first 148 mm (portrait A5 height).
+	"""
+	if page_size == "A5":
+		style = (
+			"<style>"
+			"@page{size:A4 portrait;margin:0}"
+			"html,body{margin:0;padding:0}"
+			"body{width:210mm;height:148mm;max-height:148mm;"
+			"overflow:hidden;padding:10mm;box-sizing:border-box}"
+			"</style>"
+		)
+		if "<head>" in html:
+			html = html.replace("<head>", f"<head>{style}", 1)
+		else:
+			html = style + html
+		return html, {"page-size": "A4", "orientation": "Portrait"}
+
+	return html, {"page-size": page_size, "orientation": orientation}
+
+
 class PrintTemplate(Document):
 	@frappe.whitelist()
 	def preview(self, document_name=None):
@@ -70,10 +95,9 @@ pre{{background:#f5f5f5;padding:12px;border:1px solid #ddd;white-space:pre-wrap}
 			if self.custom_pdf_letter_head:
 				lh = frappe.get_doc("Letter Head", self.custom_pdf_letter_head)
 				html = f"<div>{lh.content}</div>{html}"
-			options = {
-				"page-size": self.custom_pdf_page_size or "A4",
-				"orientation": self.custom_pdf_orientation or "Portrait",
-			}
+			html, options = _build_custom_pdf(
+				html, self.custom_pdf_page_size or "A4", self.custom_pdf_orientation or "Portrait"
+			)
 			return base64.b64encode(get_pdf(html, options=options)).decode()
 
 		elif self.format_type == "HTML":
@@ -139,10 +163,9 @@ pre{{background:#f5f5f5;padding:12px;border:1px solid #ddd;white-space:pre-wrap}
 			if self.custom_pdf_letter_head:
 				lh = frappe.get_doc("Letter Head", self.custom_pdf_letter_head)
 				html = f"<div>{lh.content}</div>{html}"
-			options = {
-				"page-size": self.custom_pdf_page_size or "A4",
-				"orientation": self.custom_pdf_orientation or "Portrait",
-			}
+			html, options = _build_custom_pdf(
+				html, self.custom_pdf_page_size or "A4", self.custom_pdf_orientation or "Portrait"
+			)
 			pdf_bytes = get_pdf(html, options=options)
 			job_id = None
 			for _ in range(copies):
