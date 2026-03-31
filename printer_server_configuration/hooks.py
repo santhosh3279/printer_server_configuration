@@ -1,7 +1,7 @@
 app_name = "printer_server_configuration"
 
 fixtures = [
-	{"dt": "Print Template", "filters": [["template_name", "in", ["BARCODE", "Customer Ledger", "Customer Ledger Thermal"]]]},
+	{"dt": "Print Template", "filters": [["template_name", "in", ["BARCODE", "Barcode_Printing", "BCODE", "Customer Ledger", "Customer Ledger Thermal", "GST FORMAT", "NCK_EO", "NCK_EO_PDF", "NCK_Thermal", "PDF", "santhosh", "Thermal Wholesale Estimate"]]]},
 ]
 app_title = "Printer Server Configuration"
 app_publisher = "Santhosh"
