@@ -25,6 +25,11 @@
   "custom_pdf_orientation",
   "col_break_custom_pdf",
   "custom_pdf_letter_head",
+  "custom_pdf_margin_top",
+  "custom_pdf_margin_bottom",
+  "col_break_custom_pdf_margins",
+  "custom_pdf_margin_left",
+  "custom_pdf_margin_right",
   "section_custom_pdf_tpl",
   "custom_pdf_template",
   "section_barcode",
@@ -169,6 +174,43 @@
    "fieldtype": "Link",
    "label": "Letter Head",
    "options": "Letter Head",
+   "depends_on": "eval:doc.format_type=='Custom PDF'"
+  },
+  {
+   "fieldname": "custom_pdf_margin_top",
+   "fieldtype": "Data",
+   "label": "Margin Top",
+   "default": "10mm",
+   "description": "wkhtmltopdf margin, e.g. 10mm or 1cm. Leave blank for 10mm. For A5 this is ignored (always 0mm).",
+   "depends_on": "eval:doc.format_type=='Custom PDF'"
+  },
+  {
+   "fieldname": "custom_pdf_margin_bottom",
+   "fieldtype": "Data",
+   "label": "Margin Bottom",
+   "default": "10mm",
+   "description": "wkhtmltopdf margin, e.g. 10mm or 1cm. Leave blank for 10mm. For A5 this is ignored (always 0mm).",
+   "depends_on": "eval:doc.format_type=='Custom PDF'"
+  },
+  {
+   "fieldname": "col_break_custom_pdf_margins",
+   "fieldtype": "Column Break",
+   "depends_on": "eval:doc.format_type=='Custom PDF'"
+  },
+  {
+   "fieldname": "custom_pdf_margin_left",
+   "fieldtype": "Data",
+   "label": "Margin Left",
+   "default": "10mm",
+   "description": "wkhtmltopdf margin, e.g. 10mm or 1cm. Leave blank for 10mm. For A5 this is ignored (always 0mm).",
+   "depends_on": "eval:doc.format_type=='Custom PDF'"
+  },
+  {
+   "fieldname": "custom_pdf_margin_right",
+   "fieldtype": "Data",
+   "label": "Margin Right",
+   "default": "10mm",
+   "description": "wkhtmltopdf margin, e.g. 10mm or 1cm. Leave blank for 10mm. For A5 this is ignored (always 0mm).",
    "depends_on": "eval:doc.format_type=='Custom PDF'"
   },
   {

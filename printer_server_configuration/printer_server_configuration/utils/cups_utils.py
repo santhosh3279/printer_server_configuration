@@ -5,9 +5,13 @@ Uses only `requests` (already a Frappe dependency) — no libcups required.
 
 import io
 import struct
+import warnings
 
 import frappe
 import requests
+import urllib3
+
+warnings.filterwarnings("ignore", category=urllib3.exceptions.InsecureRequestWarning)
 
 # ---------------------------------------------------------------------------
 # IPP Protocol Constants
@@ -361,6 +365,29 @@ def get_job_status(job_doc):
 		return {"status": job_status}
 	except Exception as e:
 		return {"error": str(e)}
+
+
+def send_raw_to_cups(server_doc, cups_printer_name, raw_bytes, job_name="raw-print"):
+	"""Send raw bytes (ESC/POS, ZPL, TSPL) to a CUPS printer via IPP with octet-stream mime type."""
+	uri = _make_printer_uri(server_doc, cups_printer_name)
+	op_attrs = _base_attrs(server_doc, uri) + [
+		(TAG_MIMETYPE, "document-format", "application/octet-stream"),
+	]
+	job_attrs = [(TAG_NAME, "job-name", job_name)]
+
+	status, groups = _send(
+		server_doc,
+		f"/printers/{cups_printer_name}",
+		OP_PRINT_JOB,
+		op_attrs,
+		extra_groups=[(TAG_JOB, job_attrs)],
+		document=raw_bytes,
+	)
+
+	if status > 0x00FF:
+		frappe.throw(f"CUPS error: 0x{status:04x}")
+
+	return groups[0].get("job-id") if groups else None
 
 
 def send_pdf_to_cups(server_doc, cups_printer_name, pdf_bytes, job_name="pdf-print"):

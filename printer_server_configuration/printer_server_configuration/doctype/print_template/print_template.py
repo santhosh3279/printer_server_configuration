@@ -77,21 +77,46 @@ def _place_a5_on_a4(pdf_bytes, orientation):
 	return buf.getvalue()
 
 
-def _build_custom_pdf(html, page_size, orientation):
+def _build_custom_pdf(html, page_size, orientation, margins=None):
 	"""Prepare HTML and wkhtmltopdf options for Custom PDF.
 
 	Returns (html, options, a5_orientation).
 	- a5_orientation is "Portrait" or "Landscape" when A5 post-processing is needed, else None.
+	- Always suppresses Frappe's 15mm auto-margin injection so rendering is identical
+	  across dev/Docker regardless of wkhtmltopdf version.
+	- margins: dict with keys top/bottom/left/right (e.g. {"top": "10mm"}).
+	  Defaults to 10mm on each side. Ignored for A5 (forced 0mm for correct placement).
 
 	For A5: wkhtmltopdf renders into native A5 page dimensions so it paginates
 	automatically when content overflows. Each resulting page is then placed onto
 	the top half of an A4 sheet via pypdf (_place_a5_on_a4).
-	  Landscape: page-width=210mm, page-height=148.5mm
-	  Portrait:  page-width=148mm,  page-height=210mm
 	"""
-	if page_size != "A5":
-		return html, {"page-size": page_size, "orientation": orientation}, None
+	m = margins or {}
+	margin_top    = m.get("top")    or "10mm"
+	margin_bottom = m.get("bottom") or "10mm"
+	margin_left   = m.get("left")   or "10mm"
+	margin_right  = m.get("right")  or "10mm"
 
+	# Always suppress Frappe's prepare_header_footer auto-margin injection.
+	# Without this, Frappe unconditionally adds margin-top/bottom 15mm whenever
+	# no #header-html / #footer-html divs are present — behaviour that differs
+	# between wkhtmltopdf versions and causes layout shifts in Docker production.
+	html = _suppress_frappe_margins(html)
+
+	if page_size != "A5":
+		options = {
+			"page-size": page_size,
+			"orientation": orientation,
+			"margin-top": margin_top,
+			"margin-bottom": margin_bottom,
+			"margin-left": margin_left,
+			"margin-right": margin_right,
+			"encoding": "utf-8",
+		}
+		return html, options, None
+
+	# A5: force 0mm wkhtmltopdf margins — content spacing is handled entirely by
+	# the template's CSS. Each rendered A5 page is then placed onto A4 via pypdf.
 	if orientation == "Landscape":
 		style = "<style>@page{size:A5 landscape;margin:0}</style>"
 		options = {
@@ -101,6 +126,7 @@ def _build_custom_pdf(html, page_size, orientation):
 			"margin-bottom": "0mm",
 			"margin-left": "0mm",
 			"margin-right": "0mm",
+			"encoding": "utf-8",
 		}
 	else:  # Portrait
 		style = "<style>@page{size:A5 portrait;margin:0}</style>"
@@ -111,11 +137,21 @@ def _build_custom_pdf(html, page_size, orientation):
 			"margin-bottom": "0mm",
 			"margin-left": "0mm",
 			"margin-right": "0mm",
+			"encoding": "utf-8",
 		}
 
 	html = _inject_style(html, style)
-	html = _suppress_frappe_margins(html)
 	return html, options, orientation
+
+
+def _custom_pdf_margins(doc):
+	"""Extract margin settings from a PrintTemplate doc, falling back to 10mm."""
+	return {
+		"top":    getattr(doc, "custom_pdf_margin_top", None)    or "10mm",
+		"bottom": getattr(doc, "custom_pdf_margin_bottom", None) or "10mm",
+		"left":   getattr(doc, "custom_pdf_margin_left", None)   or "10mm",
+		"right":  getattr(doc, "custom_pdf_margin_right", None)  or "10mm",
+	}
 
 
 class PrintTemplate(Document):
@@ -181,7 +217,8 @@ pre{{background:#f5f5f5;padding:12px;border:1px solid #ddd;white-space:pre-wrap}
 				lh = frappe.get_doc("Letter Head", self.custom_pdf_letter_head)
 				html = f"<div>{lh.content}</div>{html}"
 			html, options, a5_orient = _build_custom_pdf(
-				html, self.custom_pdf_page_size or "A4", self.custom_pdf_orientation or "Portrait"
+				html, self.custom_pdf_page_size or "A4", self.custom_pdf_orientation or "Portrait",
+				margins=_custom_pdf_margins(self),
 			)
 			pdf_bytes = get_pdf(html, options=options)
 			if a5_orient:
@@ -198,8 +235,6 @@ pre{{background:#f5f5f5;padding:12px;border:1px solid #ddd;white-space:pre-wrap}
 		"""Render and send to the given Printer via CUPS."""
 		from printer_server_configuration.printer_server_configuration.utils.cups_utils import (
 			send_pdf_to_cups,
-		)
-		from printer_server_configuration.printer_server_configuration.utils.escpos_utils import (
 			send_raw_to_cups,
 		)
 
@@ -252,7 +287,8 @@ pre{{background:#f5f5f5;padding:12px;border:1px solid #ddd;white-space:pre-wrap}
 				lh = frappe.get_doc("Letter Head", self.custom_pdf_letter_head)
 				html = f"<div>{lh.content}</div>{html}"
 			html, options, a5_orient = _build_custom_pdf(
-				html, self.custom_pdf_page_size or "A4", self.custom_pdf_orientation or "Portrait"
+				html, self.custom_pdf_page_size or "A4", self.custom_pdf_orientation or "Portrait",
+				margins=_custom_pdf_margins(self),
 			)
 			pdf_bytes = get_pdf(html, options=options)
 			if a5_orient:
