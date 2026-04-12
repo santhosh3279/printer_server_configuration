@@ -16,6 +16,16 @@ frappe.ui.form.on("Print Template", {
 		});
 	},
 
+	source_type(frm) {
+		// Clear the field that no longer applies when switching source type
+		if (frm.doc.source_type === "Report") {
+			frm.set_value("document_type", "");
+		} else {
+			frm.set_value("report_name", "");
+		}
+		frm.refresh_fields(["document_type", "report_name"]);
+	},
+
 	format_type(frm) {
 		// Clear irrelevant fields when format changes
 		frm.refresh();
@@ -25,6 +35,11 @@ frappe.ui.form.on("Print Template", {
 // ---------------------------------------------------------------
 
 function _ask_doc_name(frm, cb) {
+	// Report source type: no document name needed — run the report directly
+	if (frm.doc.source_type === "Report") {
+		cb(null);
+		return;
+	}
 	if (frm.doc.document_type) {
 		frappe.prompt(
 			{
@@ -66,7 +81,8 @@ function _pick_printer_and_doc(frm, cb) {
 				},
 			];
 
-			if (frm.doc.document_type) {
+			// For DocType source, show document name picker; Reports run without a document
+			if (frm.doc.source_type !== "Report" && frm.doc.document_type) {
 				fields.push({
 					label: __("Document Name"),
 					fieldname: "document_name",

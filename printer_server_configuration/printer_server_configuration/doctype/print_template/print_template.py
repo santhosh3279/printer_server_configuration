@@ -3,6 +3,7 @@ from frappe.model.document import Document
 
 from printer_server_configuration.printer_server_configuration.utils.render_utils import (
 	build_context,
+	build_report_context,
 	render_to_escpos,
 	render_to_html,
 )
@@ -154,16 +155,28 @@ def _custom_pdf_margins(doc):
 	}
 
 
+def _get_context(template_doc, document_name=None):
+	"""Return the Jinja context for the template based on its source_type."""
+	if getattr(template_doc, "source_type", "DocType") == "Report":
+		if not template_doc.report_name:
+			frappe.throw("Report is required when Source Type is 'Report'.")
+		return build_report_context(template_doc.report_name)
+	return build_context(template_doc, document_name)
+
+
 class PrintTemplate(Document):
 	@frappe.whitelist()
 	def preview(self, document_name=None):
 		"""Return rendered text for quick inspection."""
-		ctx = build_context(self, document_name)
+		is_report = getattr(self, "source_type", "DocType") == "Report"
+		ctx = _get_context(self, document_name)
 		if self.format_type == "Thermal":
 			return frappe.render_template(self.template_content or "", ctx)
 		elif self.format_type == "Barcode":
 			return frappe.render_template(self.barcode_template or "", ctx)
 		elif self.format_type == "PDF":
+			if is_report:
+				frappe.throw("PDF format (Print Format) is not supported for Report source type. Use Custom PDF or HTML instead.")
 			if not document_name:
 				frappe.throw("Document Name is required for PDF preview.")
 			return frappe.get_print(
@@ -171,7 +184,6 @@ class PrintTemplate(Document):
 			)
 		elif self.format_type == "Custom PDF":
 			return frappe.render_template(self.custom_pdf_template or "", ctx)
-
 		elif self.format_type == "HTML":
 			return frappe.render_template(self.template_content or "", ctx)
 
@@ -182,7 +194,11 @@ class PrintTemplate(Document):
 
 		from frappe.utils.pdf import get_pdf
 
+		is_report = getattr(self, "source_type", "DocType") == "Report"
+
 		if self.format_type == "PDF":
+			if is_report:
+				frappe.throw("PDF format (Print Format) is not supported for Report source type. Use Custom PDF or HTML instead.")
 			if not document_name:
 				frappe.throw("Document Name is required for PDF preview.")
 			html = frappe.get_print(
@@ -191,7 +207,7 @@ class PrintTemplate(Document):
 			return base64.b64encode(get_pdf(html)).decode()
 
 		elif self.format_type == "Thermal":
-			ctx = build_context(self, document_name)
+			ctx = _get_context(self, document_name)
 			rendered = frappe.render_template(self.template_content or "", ctx)
 			html = render_to_html(rendered, self.paper_width or "80mm")
 			return base64.b64encode(get_pdf(html)).decode()
@@ -199,7 +215,7 @@ class PrintTemplate(Document):
 		elif self.format_type == "Barcode":
 			import html as html_module
 
-			ctx = build_context(self, document_name)
+			ctx = _get_context(self, document_name)
 			zpl = frappe.render_template(self.barcode_template or "", ctx)
 			preview_html = f"""<html><head><meta charset='utf-8'>
 <style>body{{font-family:monospace;font-size:12px;padding:16px}}
@@ -211,7 +227,7 @@ pre{{background:#f5f5f5;padding:12px;border:1px solid #ddd;white-space:pre-wrap}
 			return base64.b64encode(get_pdf(preview_html)).decode()
 
 		elif self.format_type == "Custom PDF":
-			ctx = build_context(self, document_name)
+			ctx = _get_context(self, document_name)
 			html = frappe.render_template(self.custom_pdf_template or "", ctx)
 			if self.custom_pdf_letter_head:
 				lh = frappe.get_doc("Letter Head", self.custom_pdf_letter_head)
@@ -226,7 +242,7 @@ pre{{background:#f5f5f5;padding:12px;border:1px solid #ddd;white-space:pre-wrap}
 			return base64.b64encode(pdf_bytes).decode()
 
 		elif self.format_type == "HTML":
-			ctx = build_context(self, document_name)
+			ctx = _get_context(self, document_name)
 			html = frappe.render_template(self.template_content or "", ctx)
 			return base64.b64encode(get_pdf(html)).decode()
 
@@ -241,9 +257,11 @@ pre{{background:#f5f5f5;padding:12px;border:1px solid #ddd;white-space:pre-wrap}
 		printer_doc = frappe.get_doc("Printer", printer)
 		server_doc = frappe.get_doc("Printer Server", printer_doc.printer_server)
 		copies = int(copies or 1)
+		is_report = getattr(self, "source_type", "DocType") == "Report"
+		job_label = (self.report_name if is_report else document_name) or self.template_name
 
 		if self.format_type == "Thermal":
-			ctx = build_context(self, document_name)
+			ctx = _get_context(self, document_name)
 			raw_bytes = render_to_escpos(self, ctx)
 			job_id = send_raw_to_cups(
 				server_doc, printer_doc.cups_printer_name, raw_bytes, self.template_name
@@ -253,6 +271,8 @@ pre{{background:#f5f5f5;padding:12px;border:1px solid #ddd;white-space:pre-wrap}
 		elif self.format_type == "PDF":
 			from frappe.utils.pdf import get_pdf
 
+			if is_report:
+				frappe.throw("PDF format (Print Format) is not supported for Report source type. Use Custom PDF or HTML instead.")
 			if not document_name:
 				frappe.throw("Document Name is required for PDF printing.")
 			html = frappe.get_print(
@@ -262,12 +282,12 @@ pre{{background:#f5f5f5;padding:12px;border:1px solid #ddd;white-space:pre-wrap}
 			job_id = None
 			for _ in range(copies):
 				job_id = send_pdf_to_cups(
-					server_doc, printer_doc.cups_printer_name, pdf_bytes, document_name or self.template_name
+					server_doc, printer_doc.cups_printer_name, pdf_bytes, job_label
 				)
 			return {"success": True, "cups_job_id": job_id}
 
 		elif self.format_type == "Barcode":
-			ctx = build_context(self, document_name)
+			ctx = _get_context(self, document_name)
 			zpl = frappe.render_template(self.barcode_template or "", ctx)
 			raw_bytes = zpl.encode("utf-8")
 			total = copies * int(self.copies_per_doc or 1)
@@ -281,7 +301,7 @@ pre{{background:#f5f5f5;padding:12px;border:1px solid #ddd;white-space:pre-wrap}
 		elif self.format_type == "Custom PDF":
 			from frappe.utils.pdf import get_pdf
 
-			ctx = build_context(self, document_name)
+			ctx = _get_context(self, document_name)
 			html = frappe.render_template(self.custom_pdf_template or "", ctx)
 			if self.custom_pdf_letter_head:
 				lh = frappe.get_doc("Letter Head", self.custom_pdf_letter_head)
@@ -296,19 +316,19 @@ pre{{background:#f5f5f5;padding:12px;border:1px solid #ddd;white-space:pre-wrap}
 			job_id = None
 			for _ in range(copies):
 				job_id = send_pdf_to_cups(
-					server_doc, printer_doc.cups_printer_name, pdf_bytes, document_name or self.template_name
+					server_doc, printer_doc.cups_printer_name, pdf_bytes, job_label
 				)
 			return {"success": True, "cups_job_id": job_id}
 
 		elif self.format_type == "HTML":
 			from frappe.utils.pdf import get_pdf
 
-			ctx = build_context(self, document_name)
+			ctx = _get_context(self, document_name)
 			html = frappe.render_template(self.template_content or "", ctx)
 			pdf_bytes = get_pdf(html)
 			job_id = None
 			for _ in range(copies):
 				job_id = send_pdf_to_cups(
-					server_doc, printer_doc.cups_printer_name, pdf_bytes, document_name or self.template_name
+					server_doc, printer_doc.cups_printer_name, pdf_bytes, job_label
 				)
 			return {"success": True, "cups_job_id": job_id}

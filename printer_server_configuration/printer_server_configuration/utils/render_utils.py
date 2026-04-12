@@ -57,6 +57,61 @@ def build_context(template_doc, document_name):
 	return context
 
 
+def build_report_context(report_name, filters=None):
+	"""Run a Frappe Report and return Jinja context dict.
+
+	Context keys available in templates:
+	  report.name     — report name
+	  report.columns  — list of column dicts (label, fieldname, fieldtype, …)
+	  report.result   — list of row dicts/lists as returned by the report
+	  report.filters  — filters used when running the report
+	"""
+	from frappe.desk.query_report import run as _run_report
+
+	filters = filters or {}
+	try:
+		data = _run_report(report_name, filters=filters)
+	except Exception as exc:
+		frappe.log_error(frappe.get_traceback(), f"PrintTemplate: run report {report_name}")
+		data = {"result": [], "columns": [], "message": str(exc)}
+
+	columns = data.get("columns") or []
+	result = data.get("result") or []
+
+	# Normalise rows: if rows are lists, zip them with column fieldnames so
+	# templates can access values by name (row.qty) in addition to index.
+	fieldnames = []
+	for col in columns:
+		if isinstance(col, dict):
+			fieldnames.append(col.get("fieldname") or col.get("label", ""))
+		else:
+			fieldnames.append(str(col))
+
+	normalised = []
+	for row in result:
+		if isinstance(row, (list, tuple)):
+			ns = types.SimpleNamespace(**dict(zip(fieldnames, row)))
+			ns._row = list(row)
+			normalised.append(ns)
+		elif isinstance(row, dict):
+			normalised.append(_ns(row))
+		else:
+			normalised.append(row)
+
+	report_ns = types.SimpleNamespace(
+		name=report_name,
+		columns=columns,
+		result=normalised,
+		raw_result=result,
+		filters=filters,
+	)
+
+	return {
+		"doc": types.SimpleNamespace(),
+		"report": report_ns,
+	}
+
+
 def _get_item_price(item_code, price_list):
 	return frappe.db.get_value(
 		"Item Price",
