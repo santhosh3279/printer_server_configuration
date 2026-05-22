@@ -6,7 +6,16 @@
  "engine": "InnoDB",
  "field_order": [
   "bill_no",
-  "price_list",
+  "price_list_1",
+  "price_list_2",
+  "price_list_3",
+  "price_list_4",
+  "price_list_5",
+  "price_list_6",
+  "price_list_7",
+  "price_list_8",
+  "price_list_9",
+  "price_list_10",
   "items"
  ],
  "fields": [
@@ -16,10 +25,54 @@
    "label": "Bill No"
   },
   {
-   "fieldname": "price_list",
-   "fieldtype": "Link",
-   "label": "Price List",
-   "options": "Price List"
+   "fieldname": "price_list_1",
+   "fieldtype": "Data",
+   "label": "Price List 1"
+  },
+  {
+   "fieldname": "price_list_2",
+   "fieldtype": "Data",
+   "label": "Price List 2"
+  },
+  {
+   "fieldname": "price_list_3",
+   "fieldtype": "Data",
+   "label": "Price List 3"
+  },
+  {
+   "fieldname": "price_list_4",
+   "fieldtype": "Data",
+   "label": "Price List 4"
+  },
+  {
+   "fieldname": "price_list_5",
+   "fieldtype": "Data",
+   "label": "Price List 5"
+  },
+  {
+   "fieldname": "price_list_6",
+   "fieldtype": "Data",
+   "label": "Price List 6"
+  },
+  {
+   "fieldname": "price_list_7",
+   "fieldtype": "Data",
+   "label": "Price List 7"
+  },
+  {
+   "fieldname": "price_list_8",
+   "fieldtype": "Data",
+   "label": "Price List 8"
+  },
+  {
+   "fieldname": "price_list_9",
+   "fieldtype": "Data",
+   "label": "Price List 9"
+  },
+  {
+   "fieldname": "price_list_10",
+   "fieldtype": "Data",
+   "label": "Price List 10"
   },
   {
    "fieldname": "items",
@@ -31,7 +84,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-15 12:46:36.349445",
+ "modified": "2026-05-21 03:35:00.000000",
  "modified_by": "Administrator",
  "module": "Printer Server Configuration",
  "name": "Barcode_Prinitng",

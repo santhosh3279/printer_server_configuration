@@ -8,10 +8,20 @@
  "field_order": [
   "item_code",
   "item_name",
-  "item_uom",
+  "uom",
   "qty",
-  "rate",
-  "valuation_rate"
+  "barcode",
+  "rate_1",
+  "rate_2",
+  "rate_3",
+  "rate_4",
+  "rate_5",
+  "rate_6",
+  "rate_7",
+  "rate_8",
+  "rate_9",
+  "rate_10",
+  "bcode"
  ],
  "fields": [
   {
@@ -22,45 +32,103 @@
    "options": "Item"
   },
   {
-   "fieldname": "item_name",
    "fetch_from": "item_code.item_name",
+   "fieldname": "item_name",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Item Name",
    "read_only": 1
   },
   {
-   "fieldname": "item_uom",
-   "fieldtype": "Link",
+   "fieldname": "uom",
+   "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "UOM",
-   "options": "UOM",
-   "read_only": 0
+   "label": "UOM"
   },
   {
+   "default": "1",
    "fieldname": "qty",
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "Qty"
   },
   {
-   "fieldname": "rate",
-   "fieldtype": "Currency",
+   "fieldname": "barcode",
+   "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Rate"
+   "label": "Barcode"
   },
   {
-   "fieldname": "valuation_rate",
+   "fieldname": "rate_1",
    "fieldtype": "Currency",
    "in_list_view": 1,
-   "label": "Valuation Rate"
+   "label": "Rate 1"
+  },
+  {
+   "fieldname": "rate_2",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate 2"
+  },
+  {
+   "fieldname": "rate_3",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate 3"
+  },
+  {
+   "fieldname": "rate_4",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate 4"
+  },
+  {
+   "fieldname": "rate_5",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate 5"
+  },
+  {
+   "fieldname": "rate_6",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate 6"
+  },
+  {
+   "fieldname": "rate_7",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate 7"
+  },
+  {
+   "fieldname": "rate_8",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate 8"
+  },
+  {
+   "fieldname": "rate_9",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate 9"
+  },
+  {
+   "fieldname": "rate_10",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate 10"
+  },
+  {
+   "fieldname": "bcode",
+   "fieldtype": "Data",
+   "label": "BCode"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-04-19 00:00:00.000000",
+ "modified": "2026-05-22 07:17:04.546705",
  "modified_by": "Administrator",
  "module": "Printer Server Configuration",
  "name": "Barcode_subwindow",
