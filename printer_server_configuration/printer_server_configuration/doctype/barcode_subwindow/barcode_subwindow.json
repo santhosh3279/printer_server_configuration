@@ -20,8 +20,7 @@
   "rate_7",
   "rate_8",
   "rate_9",
-  "rate_10",
-  "bcode"
+  "rate_10"
  ],
  "fields": [
   {
@@ -117,18 +116,13 @@
    "fieldtype": "Currency",
    "in_list_view": 1,
    "label": "Rate 10"
-  },
-  {
-   "fieldname": "bcode",
-   "fieldtype": "Data",
-   "label": "BCode"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-05-22 07:17:04.546705",
+ "modified": "2026-05-23 18:51:19.944614",
  "modified_by": "Administrator",
  "module": "Printer Server Configuration",
  "name": "Barcode_subwindow",
