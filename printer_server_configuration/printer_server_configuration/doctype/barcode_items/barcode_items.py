@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class Barcode_subwindow(Document):
+class BarcodeItems(Document):
 	pass
