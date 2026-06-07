@@ -13,9 +13,9 @@ IGNORE_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
 
 
 
-class IntegrationTestBarcode_Prinitng(IntegrationTestCase):
+class IntegrationTestBarcode_Printing(IntegrationTestCase):
 	"""
-	Integration tests for Barcode_Prinitng.
+	Integration tests for Barcode_Printing.
 	Use this class for testing interactions between multiple components.
 	"""
 

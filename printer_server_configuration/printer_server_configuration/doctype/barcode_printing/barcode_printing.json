@@ -27,7 +27,7 @@
  "modified": "2026-06-07 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Printer Server Configuration",
- "name": "Barcode_Prinitng",
+ "name": "Barcode_Printing",
  "owner": "Administrator",
  "permissions": [
   {

@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class Barcode_Prinitng(Document):
+class Barcode_Printing(Document):
 	pass
