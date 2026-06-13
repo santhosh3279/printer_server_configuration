@@ -345,8 +345,9 @@ def _process_escpos(p, content, chars):
 				p.text("\n")
 		elif m := re.fullmatch(r"\[BARCODE:([^:\]]+)(?::([^:\]]+))?(?::(\d+))?\]", s):
 			_barcode(p, m.group(1), m.group(2) or "CODE39", int(m.group(3) or 64))
-		elif m := re.fullmatch(r"\[QR:([^\]:]+)(?::(\d+))?\]", s):
-			_qr(p, m.group(1), int(m.group(2) or 6))
+		elif m := re.fullmatch(r"\[QR:(?:\x22([^\x22]*)\x22|([^\]:]+))(?::(\d+))?\]", s):
+			val = m.group(1) if m.group(1) is not None else m.group(2)
+			_qr(p, val, int(m.group(3) or 6))
 		elif m := re.fullmatch(r"\[HEX:([0-9A-Fa-f]+)\]", s):
 			h = m.group(1)
 			if len(h) % 2 == 0:
@@ -452,10 +453,11 @@ def render_to_html(rendered, paper_width="80mm"):
 				f'<div style="text-align:center;font-size:0.8em;color:#555">'
 				f"&#9646; Barcode: {hl.escape(m.group(1))} ({bc_type}) &#9646;</div>"
 			)
-		elif m := re.fullmatch(r"\[QR:([^\]:]+)(?::(\d+))?\]", s):
+		elif m := re.fullmatch(r"\[QR:(?:\x22([^\x22]*)\x22|([^\]:]+))(?::(\d+))?\]", s):
+			val = m.group(1) if m.group(1) is not None else m.group(2)
 			lines.append(
 				f'<div style="text-align:center;font-size:0.8em;color:#555">'
-				f"&#9646; QR: {hl.escape(m.group(1))} &#9646;</div>"
+				f"&#9646; QR: {hl.escape(val)} &#9646;</div>"
 			)
 		elif m := re.fullmatch(r"\[HEX:([0-9A-Fa-f]+)\]", s):
 			lines.append(f'<div style="font-size:0.75em;color:#bbb">[HEX:{m.group(1)}]</div>')

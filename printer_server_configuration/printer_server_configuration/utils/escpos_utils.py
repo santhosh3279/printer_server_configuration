@@ -69,12 +69,13 @@ def _process_content(p, content, chars):
 				except Exception:
 					p.text(value + "\n")
 		elif stripped.startswith("[QR:"):
-			m = re.match(r"\[QR:([^\]]+)\]", stripped)
+			m = re.match(r"\[QR:(?:\x22([^\x22]*)\x22|([^\]]+))\]", stripped)
 			if m:
+				val = m.group(1) if m.group(1) is not None else m.group(2)
 				try:
-					p.qr(m.group(1), size=6)
+					p.qr(val, size=6)
 				except Exception:
-					p.text(m.group(1) + "\n")
+					p.text(val + "\n")
 		else:
 			# --- Inline formatting tags ---
 			_print_line(p, raw)
