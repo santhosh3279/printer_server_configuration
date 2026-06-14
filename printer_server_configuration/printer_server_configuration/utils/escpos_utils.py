@@ -51,7 +51,7 @@ def _process_content(p, content, chars):
 
 		# --- Block-level tags (must be alone on a line) ---
 		if stripped == "[CUT]":
-			p.cut()
+			p.cut(feed=False)
 		elif stripped == "[DRAWER]":
 			p.cashdraw(2)
 		elif stripped == "[LINE]":

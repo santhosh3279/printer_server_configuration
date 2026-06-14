@@ -320,12 +320,12 @@ def _process_escpos(p, content, chars):
 		if not s:
 			p.text("\n")
 		elif s == "[CUT]":
-			p.cut()
+			p.cut(feed=False)
 		elif s == "[PCUT]":
 			try:
-				p.cut(mode="PART")
+				p.cut(mode="PART", feed=False)
 			except Exception:
-				p.cut()
+				p.cut(feed=False)
 		elif s == "[DRAWER]":
 			p.cashdraw(2)
 		elif s == "[LINE]":
