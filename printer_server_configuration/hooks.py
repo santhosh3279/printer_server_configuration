@@ -78,10 +78,11 @@ app_include_js = "/assets/printer_server_configuration/js/thermal_print.js"
 # ----------
 
 # add methods and filters to jinja environment
-# jinja = {
-# 	"methods": "printer_server_configuration.utils.jinja_methods",
-# 	"filters": "printer_server_configuration.utils.jinja_filters"
-# }
+jinja = {
+	"methods": [
+		"printer_server_configuration.printer_server_configuration.utils.render_utils.get_qr_code"
+	]
+}
 
 # Installation
 # ------------
