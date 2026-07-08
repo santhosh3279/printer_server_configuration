@@ -493,8 +493,14 @@ def _line_to_html(line):
 		shared_style, left_text = _parse_html_style(left_raw)
 		_, right_text = _parse_html_style(right_raw)
 		return (
-			f'<div style="display:flex;justify-content:space-between;{shared_style}">'
-			f"<span>{left_text}</span><span>{right_text}</span></div>"
+			f'<div style="{shared_style}">'
+			f'<table style="width:100%;border:none;border-collapse:collapse;padding:0;margin:0;font-family:inherit;font-size:inherit;color:inherit;background:transparent;table-layout:fixed;">'
+			f'<tr>'
+			f'<td style="text-align:left;border:none;padding:0;margin:0;white-space:pre-wrap;word-break:break-all;font-family:inherit;font-size:inherit;color:inherit;">{left_text}</td>'
+			f'<td style="text-align:right;border:none;padding:0;margin:0;white-space:pre-wrap;word-break:break-all;font-family:inherit;font-size:inherit;color:inherit;">{right_text}</td>'
+			f'</tr>'
+			f'</table>'
+			f'</div>'
 		)
 
 	# Single alignment
