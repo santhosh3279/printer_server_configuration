@@ -25,6 +25,8 @@
   "section_custom_pdf",
   "custom_pdf_page_size",
   "custom_pdf_orientation",
+  "custom_pdf_print_speed",
+  "custom_pdf_paper_type",
   "col_break_custom_pdf",
   "custom_pdf_letter_head",
   "custom_pdf_margin_top",
@@ -184,6 +186,20 @@
    "depends_on": "eval:doc.format_type=='Custom PDF'"
   },
   {
+   "fieldname": "custom_pdf_print_speed",
+   "fieldtype": "Int",
+   "label": "Printer Speed",
+   "description": "Nominal print speed (e.g. pages per minute). Leave blank to use printer default speed.",
+   "depends_on": "eval:doc.format_type=='Custom PDF'"
+  },
+  {
+   "fieldname": "custom_pdf_paper_type",
+   "fieldtype": "Data",
+   "label": "Paper Type",
+   "description": "The media type keyword (e.g. plain, labels, glossy) to request.",
+   "depends_on": "eval:doc.format_type=='Custom PDF'"
+  },
+  {
    "fieldname": "col_break_custom_pdf",
    "fieldtype": "Column Break",
    "depends_on": "eval:doc.format_type=='Custom PDF'"
@@ -199,16 +215,16 @@
    "fieldname": "custom_pdf_margin_top",
    "fieldtype": "Data",
    "label": "Margin Top",
-   "default": "10mm",
-   "description": "wkhtmltopdf margin, e.g. 10mm or 1cm. Leave blank for 10mm. For A5 this is ignored (always 0mm).",
+   "default": "0mm",
+   "description": "wkhtmltopdf margin, e.g. 10mm or 1cm. Leave blank for 0mm. For A5 this is ignored (always 0mm).",
    "depends_on": "eval:doc.format_type=='Custom PDF'"
   },
   {
    "fieldname": "custom_pdf_margin_bottom",
    "fieldtype": "Data",
    "label": "Margin Bottom",
-   "default": "10mm",
-   "description": "wkhtmltopdf margin, e.g. 10mm or 1cm. Leave blank for 10mm. For A5 this is ignored (always 0mm).",
+   "default": "0mm",
+   "description": "wkhtmltopdf margin, e.g. 10mm or 1cm. Leave blank for 0mm. For A5 this is ignored (always 0mm).",
    "depends_on": "eval:doc.format_type=='Custom PDF'"
   },
   {
@@ -220,16 +236,16 @@
    "fieldname": "custom_pdf_margin_left",
    "fieldtype": "Data",
    "label": "Margin Left",
-   "default": "10mm",
-   "description": "wkhtmltopdf margin, e.g. 10mm or 1cm. Leave blank for 10mm. For A5 this is ignored (always 0mm).",
+   "default": "0mm",
+   "description": "wkhtmltopdf margin, e.g. 10mm or 1cm. Leave blank for 0mm. For A5 this is ignored (always 0mm).",
    "depends_on": "eval:doc.format_type=='Custom PDF'"
   },
   {
    "fieldname": "custom_pdf_margin_right",
    "fieldtype": "Data",
    "label": "Margin Right",
-   "default": "10mm",
-   "description": "wkhtmltopdf margin, e.g. 10mm or 1cm. Leave blank for 10mm. For A5 this is ignored (always 0mm).",
+   "default": "0mm",
+   "description": "wkhtmltopdf margin, e.g. 10mm or 1cm. Leave blank for 0mm. For A5 this is ignored (always 0mm).",
    "depends_on": "eval:doc.format_type=='Custom PDF'"
   },
   {

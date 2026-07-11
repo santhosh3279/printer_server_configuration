@@ -93,10 +93,10 @@ def _build_custom_pdf(html, page_size, orientation, margins=None):
 	the top half of an A4 sheet via pypdf (_place_a5_on_a4).
 	"""
 	m = margins or {}
-	margin_top    = m.get("top")    or "10mm"
-	margin_bottom = m.get("bottom") or "10mm"
-	margin_left   = m.get("left")   or "10mm"
-	margin_right  = m.get("right")  or "10mm"
+	margin_top    = m.get("top")    or "0mm"
+	margin_bottom = m.get("bottom") or "0mm"
+	margin_left   = m.get("left")   or "0mm"
+	margin_right  = m.get("right")  or "0mm"
 
 	# Always suppress Frappe's prepare_header_footer auto-margin injection.
 	# Without this, Frappe unconditionally adds margin-top/bottom 15mm whenever
@@ -146,12 +146,12 @@ def _build_custom_pdf(html, page_size, orientation, margins=None):
 
 
 def _custom_pdf_margins(doc):
-	"""Extract margin settings from a PrintTemplate doc, falling back to 10mm."""
+	"""Extract margin settings from a PrintTemplate doc, falling back to 0mm."""
 	return {
-		"top":    getattr(doc, "custom_pdf_margin_top", None)    or "10mm",
-		"bottom": getattr(doc, "custom_pdf_margin_bottom", None) or "10mm",
-		"left":   getattr(doc, "custom_pdf_margin_left", None)   or "10mm",
-		"right":  getattr(doc, "custom_pdf_margin_right", None)  or "10mm",
+		"top":    getattr(doc, "custom_pdf_margin_top", None)    or "0mm",
+		"bottom": getattr(doc, "custom_pdf_margin_bottom", None) or "0mm",
+		"left":   getattr(doc, "custom_pdf_margin_left", None)   or "0mm",
+		"right":  getattr(doc, "custom_pdf_margin_right", None)  or "0mm",
 	}
 
 
@@ -316,7 +316,9 @@ pre{{background:#f5f5f5;padding:12px;border:1px solid #ddd;white-space:pre-wrap}
 			job_id = None
 			for _ in range(copies):
 				job_id = send_pdf_to_cups(
-					server_doc, printer_doc.cups_printer_name, pdf_bytes, job_label
+					server_doc, printer_doc.cups_printer_name, pdf_bytes, job_label,
+					print_speed=getattr(self, "custom_pdf_print_speed", None),
+					paper_type=getattr(self, "custom_pdf_paper_type", None),
 				)
 			return {"success": True, "cups_job_id": job_id}
 

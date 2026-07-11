@@ -390,13 +390,17 @@ def send_raw_to_cups(server_doc, cups_printer_name, raw_bytes, job_name="raw-pri
 	return groups[0].get("job-id") if groups else None
 
 
-def send_pdf_to_cups(server_doc, cups_printer_name, pdf_bytes, job_name="pdf-print"):
+def send_pdf_to_cups(server_doc, cups_printer_name, pdf_bytes, job_name="pdf-print", print_speed=None, paper_type=None):
 	"""Send raw PDF bytes to a CUPS printer via IPP."""
 	uri = _make_printer_uri(server_doc, cups_printer_name)
 	op_attrs = _base_attrs(server_doc, uri) + [
 		(TAG_MIMETYPE, "document-format", "application/pdf"),
 	]
 	job_attrs = [(TAG_NAME, "job-name", job_name)]
+	if print_speed:
+		job_attrs.append((TAG_INTEGER, "print-speed", int(print_speed)))
+	if paper_type:
+		job_attrs.append((TAG_KEYWORD, "media-type", str(paper_type)))
 
 	status, groups = _send(
 		server_doc,
