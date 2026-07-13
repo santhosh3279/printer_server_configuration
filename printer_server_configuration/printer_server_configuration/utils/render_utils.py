@@ -423,7 +423,11 @@ def render_to_html(rendered, paper_width="80mm"):
 	import html as hl
 
 	chars = CHARS_PER_LINE.get(paper_width, 46)
-	width_px = "302px" if paper_width == "80mm" else "220px"
+	# Body width must hold exactly `chars` monospace characters so space-padded
+	# columns land on the same grid as the printer. Courier advance = 0.6em
+	# (7.2px at 12px); +2px slack absorbs fallback-font rounding without
+	# admitting an extra character column (slack < one char advance).
+	width_px = f"{int(chars * 7.2 + 2)}px"
 	lines = []
 
 	for line in rendered.split("\n"):
@@ -462,13 +466,13 @@ def render_to_html(rendered, paper_width="80mm"):
 		elif m := re.fullmatch(r"\[HEX:([0-9A-Fa-f]+)\]", s):
 			lines.append(f'<div style="font-size:0.75em;color:#bbb">[HEX:{m.group(1)}]</div>')
 		else:
-			lines.append(_line_to_html(raw))
+			lines.append(_line_to_html(raw, chars))
 
 	body = "\n".join(lines)
 	return f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8"><style>
   body {{
-    font-family: 'Courier New', Courier, monospace;
+    font-family: 'Courier New', 'Liberation Mono', 'DejaVu Sans Mono', Courier, monospace;
     font-size: 12px;
     width: {width_px};
     margin: 0 auto;
@@ -481,26 +485,26 @@ def render_to_html(rendered, paper_width="80mm"):
 </html>"""
 
 
-def _line_to_html(line):
+def _line_to_html(line, chars):
+	import html as hl
+
 	has_left = bool(re.search(r"\[L(?:EFT)?\]", line, re.I))
 	has_right = bool(re.search(r"\[R(?:IGHT)?\]", line, re.I))
 
-	# Two-column layout: [L]left text[R]right text
+	# Two-column layout: [L]left text[R]right text — pad with spaces using the
+	# same math as the ESC/POS renderer so the PDF matches the printed receipt
+	# character-for-character (plain text, no layout-engine dependence).
 	if has_left and has_right:
 		parts = re.split(r"\[R(?:IGHT)?\]", line, 1, re.I)
 		left_raw = _strip_alignment_tags(parts[0])
 		right_raw = _strip_alignment_tags(parts[1] if len(parts) > 1 else "")
-		shared_style, left_text = _parse_html_style(left_raw)
-		_, right_text = _parse_html_style(right_raw)
+		shared_style, _ = _parse_html_style(left_raw)
+		_, left_text = _parse_escpos_style(left_raw)
+		_, right_text = _parse_escpos_style(right_raw)
+		pad = max(0, chars - len(left_text) - len(right_text))
 		return (
 			f'<div style="{shared_style}">'
-			f'<table style="width:100%;border:none;border-collapse:collapse;padding:0;margin:0;font-family:inherit;font-size:inherit;color:inherit;background:transparent;table-layout:fixed;">'
-			f'<tr>'
-			f'<td style="text-align:left;border:none;padding:0;margin:0;white-space:pre-wrap;word-break:break-all;font-family:inherit;font-size:inherit;color:inherit;">{left_text}</td>'
-			f'<td style="text-align:right;border:none;padding:0;margin:0;white-space:pre-wrap;word-break:break-all;font-family:inherit;font-size:inherit;color:inherit;">{right_text}</td>'
-			f'</tr>'
-			f'</table>'
-			f'</div>'
+			f"{hl.escape(left_text + ' ' * pad + right_text)}</div>"
 		)
 
 	# Single alignment
